@@ -12,7 +12,7 @@ import { MobileSheet } from "@/components/layout/MobileSheet"
 
 // Feature Components
 import { STILI_STATO, calcolaStatoVitale, MapGlobe } from "@/components/features/MapGlobe"
-import { ChatCard } from "@/components/features/ChatCard"
+import { ChatCard, timeAgo } from "@/components/features/ChatCard"
 import { AccountView } from "@/components/features/AccountView"
 import { ActivityView } from "@/components/features/ActivityView"
 import { ModalsContainer } from "@/components/features/ModalsContainer"
@@ -475,11 +475,11 @@ export default function ThinkApp() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${
-                  stato === 'attivo' ? 'bg-emerald-400 animate-pulse' :
-                  stato === 'in_declino' ? 'bg-amber-400' : 'bg-zinc-500'
+                  ['seme', 'germoglio', 'albero'].includes(stato) ? 'bg-emerald-400 animate-pulse' :
+                  stato === 'foglia_secca' ? 'bg-amber-400' : 'bg-zinc-500'
                 }`} />
                 <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-faint)]">
-                  {stato === 'attivo' ? 'Attivo' : stato === 'in_declino' ? 'In declino' : 'Archivio'}
+                  {['seme', 'germoglio', 'albero'].includes(stato) ? 'Attivo' : stato === 'foglia_secca' ? 'In declino' : 'Archivio'}
                 </span>
               </div>
               <div className="flex items-center gap-1">
