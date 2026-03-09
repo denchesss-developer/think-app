@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { chatId, rispostaId, motivo, dettagli, segnalatoDa } = await req.json();
+    const { chatId, rispostaId, testoContenuto, motivo, dettagli, segnalatoDa } = await req.json();
 
     const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -31,6 +31,26 @@ export async function POST(req: Request) {
       message += `\n📍 <b>ID Risposta (Commento):</b> <code>${rispostaId}</code>`;
     }
 
+    if (testoContenuto) {
+      message += `\n\n💬 <b>Testo Originale:</b>\n<i>"${testoContenuto}"</i>`;
+    }
+
+    // Costruiamo la payload per i bottoni
+    // callback_data ha un limite di 64 byte, quindi usiamo un formato compatto: action|chatId|rispostaId
+    const targetChat = chatId || "null";
+    const targetRisp = rispostaId || "null";
+    
+    const inlineKeyboard = {
+      inline_keyboard: [
+        [
+          { text: '🔴 Cancella Contenuto', callback_data: `del|${targetChat}|${targetRisp}` }
+        ],
+        [
+          { text: '🟢 Ignora (Tutto Regolare)', callback_data: `ign|${targetChat}|${targetRisp}` }
+        ]
+      ]
+    };
+
     // Inviamo la richiesta a Telegram
     const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
     
@@ -43,6 +63,7 @@ export async function POST(req: Request) {
         chat_id: CHAT_ID,
         text: message,
         parse_mode: 'HTML',
+        reply_markup: inlineKeyboard
       }),
     });
 

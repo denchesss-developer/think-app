@@ -18,10 +18,11 @@ interface ReportModalProps {
   onClose: () => void
   chatId?: string
   rispostaId?: string
+  testoContenuto?: string
   nickname: string
 }
 
-export function ReportModal({ isOpen, onClose, chatId, rispostaId, nickname }: ReportModalProps) {
+export function ReportModal({ isOpen, onClose, chatId, rispostaId, testoContenuto, nickname }: ReportModalProps) {
   const [motivoSelezionato, setMotivoSelezionato] = useState<string | null>(null)
   const [dettagli, setDettagli] = useState("")
   const [invio, setInvio] = useState(false)
@@ -48,6 +49,7 @@ export function ReportModal({ isOpen, onClose, chatId, rispostaId, nickname }: R
         body: JSON.stringify({
           chatId: chatId || null,
           rispostaId: rispostaId || null,
+          testoContenuto: testoContenuto || null,
           motivo: motivoSelezionato,
           dettagli: dettagli.trim() || null,
           segnalatoDa: nickname,

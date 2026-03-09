@@ -99,6 +99,7 @@ export default function ThinkApp() {
   const [reportOpen, setReportOpen] = useState(false)
   const [reportChatId, setReportChatId] = useState<string | undefined>(undefined)
   const [reportRispostaId, setReportRispostaId] = useState<string | undefined>(undefined)
+  const [reportTestoContenuto, setReportTestoContenuto] = useState<string | undefined>(undefined)
 
   // Backend Calls
   async function fetchChats() {
@@ -488,6 +489,7 @@ export default function ThinkApp() {
                   onClick={() => {
                     setReportChatId(String(chatAttiva.id))
                     setReportRispostaId(undefined)
+                    setReportTestoContenuto(chatAttiva.titolo)
                     setReportOpen(true)
                   }}
                   className="p-2 rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors text-[var(--color-text-faint)] hover:text-red-400"
@@ -573,6 +575,7 @@ export default function ThinkApp() {
                         onClick={() => {
                           setReportChatId(String(chatAttiva.id))
                           setReportRispostaId(String(r.id))
+                          setReportTestoContenuto(r.testo)
                           setReportOpen(true)
                         }}
                         className="ml-auto p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-text-faint)] hover:text-red-400"
@@ -866,6 +869,7 @@ export default function ThinkApp() {
         onClose={() => setReportOpen(false)}
         chatId={reportChatId}
         rispostaId={reportRispostaId}
+        testoContenuto={reportTestoContenuto}
         nickname={mioNickname}
       />
 
