@@ -14,26 +14,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // Costruiamo il messaggio formattato
+    // Costruiamo il messaggio formattato in HD
     let message = `🚨 <b>NUOVA SEGNALAZIONE</b>\n\n`;
-    message += `👤 <b>Segnalato da:</b> ${segnalatoDa}\n`;
-    message += `🏷 <b>Motivo:</b> ${motivo}\n`;
+    message += `🛑 <b>Motivo:</b> ${motivo}\n`;
     
     if (dettagli) {
-      message += `📝 <b>Dettagli:</b> ${dettagli}\n`;
-    }
-    
-    if (chatId) {
-      message += `\n📍 <b>ID Pensiero/Chat:</b> <code>${chatId}</code>`;
-    }
-    
-    if (rispostaId) {
-      message += `\n📍 <b>ID Risposta (Commento):</b> <code>${rispostaId}</code>`;
+      message += `📝 <b>Dettagli:</b> <i>${dettagli}</i>\n`;
     }
 
     if (testoContenuto) {
-      message += `\n\n💬 <b>Testo Originale:</b>\n<i>"${testoContenuto}"</i>`;
+      message += `\n💬 <b>Contenuto Segnalato:</b>\n<blockquote>${testoContenuto}</blockquote>`;
     }
+
+    // Metadati tecnici in fondo scuri/nascosti
+    message += `\n\n<pre><code class="language-info">👤 Segnalato da: ${segnalatoDa}</code></pre>`;
+    if (chatId) message += `\n<pre>ID Chat: ${chatId}</pre>`;
+    if (rispostaId) message += `\n<pre>ID Risp: ${rispostaId}</pre>`;
 
     // Costruiamo la payload per i bottoni
     // callback_data ha un limite di 64 byte, quindi usiamo un formato compatto: action|chatId|rispostaId

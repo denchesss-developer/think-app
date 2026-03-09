@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +13,10 @@ export async function POST(req: Request) {
       const chatIdTelegram = callbackQuery.message.chat.id;
 
       const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY! || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
 
       // Dividiamo la stringa: [azione, chat_id_app, risposta_id_app]
       const [action, targetChat, targetRisp] = callbackData.split('|');
@@ -29,7 +33,7 @@ export async function POST(req: Request) {
       else if (action === 'del') {
         if (targetRisp !== 'null') {
           // Cancella la Risposta (Commento)
-          const { error } = await supabase.from('risposte').delete().eq('id', targetRisp);
+          const { error } = await supabaseAdmin.from('risposte').delete().eq('id', targetRisp);
           if (error) {
             console.error('Errore cancellazione risposta:', error);
             errorOccurred = true;
@@ -39,7 +43,7 @@ export async function POST(req: Request) {
         } 
         else if (targetChat !== 'null') {
           // Cancella la Chat Primaria
-          const { error } = await supabase.from('chats').delete().eq('id', targetChat);
+          const { error } = await supabaseAdmin.from('chats').delete().eq('id', targetChat);
           if (error) {
             console.error('Errore cancellazione chat:', error);
             errorOccurred = true;
