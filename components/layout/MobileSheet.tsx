@@ -164,7 +164,7 @@ export function MobileSheet({
 
         {/* Pinned Footer */}
         {footer && (
-          <div className="flex-shrink-0 px-4 pb-6 pt-3 border-t border-[var(--color-border-subtle)] relative z-20 bg-[var(--color-bg-panel)]">
+          <div className="flex-shrink-0 px-4 pb-28 pt-3 border-t border-[var(--color-border-subtle)] relative z-20 bg-[var(--color-bg-panel)]">
             {footer}
           </div>
         )}
