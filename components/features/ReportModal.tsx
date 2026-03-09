@@ -40,6 +40,20 @@ export function ReportModal({ isOpen, onClose, chatId, rispostaId, nickname }: R
         dettagli: dettagli.trim() || null,
         segnalato_da: nickname,
       }])
+
+      // Notifica Telegram (silenziosa)
+      fetch('/api/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: chatId || null,
+          rispostaId: rispostaId || null,
+          motivo: motivoSelezionato,
+          dettagli: dettagli.trim() || null,
+          segnalatoDa: nickname,
+        }),
+      }).catch(err => console.error("Errore notifica Telegram:", err))
+
       setInviato(true)
     } catch (err) {
       console.error("Errore segnalazione:", err)
