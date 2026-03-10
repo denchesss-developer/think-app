@@ -118,20 +118,58 @@ export function MapGlobe({
     return el
   }
 
+  // Generazione Manuale Graticola (Paralleli e Meridiani) visibili su temi chiari/scuri
+  const GRATICULE_STEP = 15;
+  const graticuleLines = [];
+  
+  // Paralleli (da -90 a 90)
+  for (let lat = -90; lat <= 90; lat += GRATICULE_STEP) {
+    const coords = [];
+    for (let lng = -180; lng <= 180; lng += 5) { // Passi da 5 per una curva fluida
+      coords.push([lat, lng]);
+    }
+    graticuleLines.push(coords);
+  }
+  
+  // Meridiani (da -180 a 180)
+  for (let lng = -180; lng <= 180; lng += GRATICULE_STEP) {
+    const coords = [];
+    for (let lat = -90; lat <= 90; lat += 5) {
+      coords.push([lat, lng]);
+    }
+    graticuleLines.push(coords);
+  }
+
   return (
     <div className={`absolute top-0 bottom-0 right-0 transition-[left] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center ${sidebarOpen ? "lg:left-[420px]" : "left-0"} max-lg:left-0`}>
       <Globe
         ref={globeRef}
         backgroundColor="rgba(0,0,0,0)"
         showGlobe={true}
-        globeMaterial={new THREE.MeshBasicMaterial({ color: isDark ? '#141416' : '#f4f4f5' })}
+        globeMaterial={
+          new THREE.MeshBasicMaterial({ 
+            color: isDark ? '#141416' : '#f4f4f5',
+            transparent: true,
+            opacity: isDark ? 1 : 0.95
+          })
+        }
         showAtmosphere={false}
-        showGraticules={true}
         polygonsData={countries.features}
         polygonCapColor={() => isDark ? '#27272a' : '#dfe1e5'}
         polygonSideColor={() => 'rgba(0,0,0,0)'}
-        polygonStrokeColor={() => isDark ? '#52525b' : '#6b7280'}
+        polygonStrokeColor={() => isDark ? '#52525b' : '#a1a1aa'} // Confini nazioni
         polygonAltitude={0.01}
+        
+        // Graticola Geografica Custom
+        pathsData={graticuleLines}
+        pathPoints={(d: any) => d}
+        pathPointLat={(p: any) => p[0]}
+        pathPointLng={(p: any) => p[1]}
+        pathColor={() => isDark ? 'rgba(82, 82, 91, 0.4)' : 'rgba(161, 161, 170, 0.6)'} // Grigio in modalità chiara
+        pathDashLength={0}
+        pathResolution={2}
+        pathStroke={1}
+
         htmlElementsData={chats} 
         htmlLat="lat" 
         htmlLng="lng" 
