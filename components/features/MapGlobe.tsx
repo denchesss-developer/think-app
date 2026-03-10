@@ -23,19 +23,19 @@ export function calcolaStatoVitale(chat: Chat) {
   const oreDallUltimaAttivita = (Date.now() - dataAttivita) / (1000 * 60 * 60)
   const risposte = chat.risposte_count || 0
 
-  // Archivio: nessuna attività per 7 giorni (168 ore)
-  if (oreDallUltimaAttivita > 168) return 'archivio'
+  // Archivio Globale: nessuna attività per 30 giorni (720 ore)
+  if (oreDallUltimaAttivita > 720) return 'archivio'
 
-  // Foglia Secca: Inattività per > 48h OPPURE 0 risposte dopo le prime 12 ore di vita
-  if (oreDallUltimaAttivita > 48 || (risposte === 0 && oreDallaCreazione > 12)) return 'foglia_secca'
+  // Foglia Secca: Inattività per > 14 giorni (336 ore) OPPURE 0 risposte dopo i primi 3 giorni (72 ore) di vita
+  if (oreDallUltimaAttivita > 336 || (risposte === 0 && oreDallaCreazione > 72)) return 'foglia_secca'
 
-  // Albero: più di 48 ore di vita, almeno 10 risposte, e attività recente (< 24h)
-  if (oreDallaCreazione > 48 && risposte >= 10 && oreDallUltimaAttivita <= 24) return 'albero'
+  // Albero: più di 72 ore (3 giorni) di vita, almeno 5 risposte, e attività recente (< 7 giorni / 168 ore)
+  if (oreDallaCreazione > 72 && risposte >= 5 && oreDallUltimaAttivita <= 168) return 'albero'
 
-  // Germoglio: Crescita anticipata (>= 3 risposte) OPPURE ha superato le 12h con almeno 1 risposta
-  if (risposte >= 3 || (oreDallaCreazione > 12 && risposte > 0)) return 'germoglio'
+  // Germoglio: Crescita anticipata (>= 2 risposte) OPPURE ha superato le 24h con almeno 1 risposta
+  if (risposte >= 2 || (oreDallaCreazione > 24 && risposte > 0)) return 'germoglio'
 
-  // Seme: Default (0-12 ore, < 3 risposte)
+  // Seme: Default (0-72 ore, < 2 risposte)
   return 'seme'
 }
 

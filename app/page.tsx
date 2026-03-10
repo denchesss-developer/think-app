@@ -693,45 +693,20 @@ export default function ThinkApp() {
     else setLoginSent(true)
   }
 
-  function calcolaDistanzaKM(lat1: number, lon1: number, lat2: number, lon2: number) {
-    const R = 6371
-    const dLat = (lat2 - lat1) * (Math.PI / 180)
-    const dLon = (lon2 - lon1) * (Math.PI / 180)
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c
-  }
-
   // Views Renderers
   const getChatsFiltrate = () => {
     let f = [...chats].filter(c => c.lat !== null)
-
-    const citta = CITTA_TEST.find(c => c.id === gpsSimulato)
-    const myLat = citta && citta.id !== 'auto' ? citta.lat! : 41.9
-    const myLng = citta && citta.id !== 'auto' ? citta.lng! : 12.4
 
     if (filtroAttivo === 'Archivio') {
       f = f.filter(c => calcolaStatoVitale(c) === 'archivio')
     } else {
       f = f.filter(c => {
         const stato = calcolaStatoVitale(c)
+        // Nascondi sempre Archivio e Foglia Secca dalla mappa attiva e dal feed base
         if (stato === 'archivio' || stato === 'foglia_secca') return false
-
-        if (activeTab === 'esplora') return true
-
-        const distanza = calcolaDistanzaKM(myLat, myLng, c.lat, c.lng)
-        let raggioMax = 0
-
-        if (stato === 'seme') raggioMax = 10
-        else if (stato === 'germoglio') raggioMax = 50
-        else if (stato === 'albero') raggioMax = 500
-        else if (stato === 'foresta') raggioMax = Infinity
-        else raggioMax = Infinity
-
-        return distanza <= raggioMax
+        
+        // Tutti gli altri pensieri (semi, germogli, ecc) sono visibili globalmente
+        return true
       })
     }
 
