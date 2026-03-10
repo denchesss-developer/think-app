@@ -16,15 +16,27 @@ export const STILI_STATO: Record<string, { icona: string, nome: string, globoSca
 }
 
 export function calcolaStatoVitale(chat: Chat) {
+  const dataCreazione = new Date(chat.created_at).getTime()
   const dataAttivita = new Date(chat.ultima_attivita || chat.created_at).getTime()
-  const minutiPassati = (Date.now() - dataAttivita) / 60000
-  if (minutiPassati > 5) return 'archivio'
-  if (minutiPassati > 2) return 'foglia_secca'
-
+  
+  const oreDallaCreazione = (Date.now() - dataCreazione) / (1000 * 60 * 60)
+  const oreDallUltimaAttivita = (Date.now() - dataAttivita) / (1000 * 60 * 60)
   const risposte = chat.risposte_count || 0
-  if (risposte === 0) return 'seme'
-  if (risposte > 4) return 'albero'
-  return 'germoglio'
+
+  // Archivio: nessuna attività per 7 giorni (168 ore)
+  if (oreDallUltimaAttivita > 168) return 'archivio'
+
+  // Foglia Secca: Inattività per > 48h OPPURE 0 risposte dopo le prime 12 ore di vita
+  if (oreDallUltimaAttivita > 48 || (risposte === 0 && oreDallaCreazione > 12)) return 'foglia_secca'
+
+  // Albero: più di 48 ore di vita, almeno 10 risposte, e attività recente (< 24h)
+  if (oreDallaCreazione > 48 && risposte >= 10 && oreDallUltimaAttivita <= 24) return 'albero'
+
+  // Germoglio: Crescita anticipata (>= 3 risposte) OPPURE ha superato le 12h con almeno 1 risposta
+  if (risposte >= 3 || (oreDallaCreazione > 12 && risposte > 0)) return 'germoglio'
+
+  // Seme: Default (0-12 ore, < 3 risposte)
+  return 'seme'
 }
 
 interface MapGlobeProps {
