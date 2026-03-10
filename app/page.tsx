@@ -108,38 +108,22 @@ export default function ThinkApp() {
 
   // Backend Calls
   async function fetchChats() {
+    console.log("DEBUG: Eseguo fetchChats per:", gpsSimulato)
     try {
-      const mieCoord = await ottieniCoordinate()
+      // Fetch all chats globally, ordered by newest first (limit 500 for performance if needed, but for now we fetch all relevant)
+      const { data: allChats, error } = await supabase
+        .from('chats')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500)
 
-      // 1. Chats vicine
-      const localRes = await supabase.rpc('chats_in_view', {
-        lat_in: mieCoord.lat,
-        lng_in: mieCoord.lng,
-        radius_km: 500
-      })
-
-      // 2. Archiviati globali (rimuoviamo risposte(count) per evitare errori 400 se restrizioni schema attive)
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-      const archRes = await supabase.from('chats').select('*').lt('created_at', twentyFourHoursAgo).order('created_at', { ascending: false }).limit(50)
-
-      const merged = new Map<number, Chat>()
-
-      if (localRes.data) {
-        localRes.data.forEach((c: Chat) => merged.set(c.id, c))
+      if (error) {
+        console.error("DEBUG: Supabase fetch error:", error)
+        return
       }
 
-      if (archRes.data) {
-        archRes.data.forEach((c: Chat) => {
-          if (calcolaStatoVitale(c) === 'archivio') {
-            merged.set(c.id, c)
-          }
-        })
-      }
-
-      const chatOrdinate = Array.from(merged.values())
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-      setChats(chatOrdinate)
+      console.log(`DEBUG: fetchChats recuperate ${allChats?.length} chats dal db`)
+      setChats(allChats || [])
     } catch (err) {
       console.error("DEBUG: fetchChats error:", err)
     }
@@ -715,6 +699,7 @@ export default function ThinkApp() {
     if (testoRicerca) f = f.filter(c => c.titolo.toLowerCase().includes(testoRicerca.toLowerCase()) || c.autore.toLowerCase().includes(testoRicerca.toLowerCase()))
 
     if (filtroAttivo === 'Tendenze') f.sort((a, b) => (b.risposte_count || 0) - (a.risposte_count || 0))
+    console.log(`DEBUG: Filtraggio completato. Input: ${chats.length}, Output: ${f.length}`)
     return f
   }
 
