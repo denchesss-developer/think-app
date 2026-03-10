@@ -417,13 +417,9 @@ export default function ThinkApp() {
   const renderFeedContent = () => (
     <div className="fade-in-up md:animate-in md:duration-500 pb-10">
       <div className="sticky top-0 z-[40] pb-2 pt-2 -mx-6 px-6 bg-[var(--color-bg-panel)] backdrop-blur-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-b border-[var(--color-border-subtle)]">
-        <div className="lg:hidden mb-3 flex flex-col items-center">
-          <img 
-            src="/logo.svg" 
-            alt="Think" 
-            className="h-10 w-auto dark:invert object-contain"
-          />
-          <p className="text-[12px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center mt-1">Pensieri dal mondo</p>
+        <div className="lg:hidden mb-3">
+          <h2 className="text-[28px] font-black tracking-tight text-center">Feed</h2>
+          <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center">Pensieri dal mondo</p>
         </div>
         <Input 
           icon={<Search className="w-4 h-4 text-[var(--color-text-faint)]" />} 
@@ -651,9 +647,19 @@ export default function ThinkApp() {
 
       {/* MOBILE HEADER: Logo + Nickname */}
       <div className="fixed top-0 left-0 right-0 z-[45] lg:hidden flex items-center justify-between px-5 py-3 pointer-events-none">
-        <h1 className="text-xl font-black tracking-tight text-gradient">
-          Think.
-        </h1>
+        {/* Logo Think: scuro in light mode, bianco in dark mode */}
+        <div className="flex items-center">
+          <img
+            src="/think-logo-dark.svg"
+            alt="Think"
+            className="h-8 w-auto block dark:hidden"
+          />
+          <img
+            src="/think-logo-white.svg"
+            alt="Think"
+            className="h-8 w-auto hidden dark:block"
+          />
+        </div>
         <div className="flex items-center gap-2 pointer-events-auto">
           <span className="text-[12px] font-bold text-[var(--color-text-muted)] tracking-wide">
             {utenteLoggato ? utenteLoggato.email.split('@')[0] : mioNickname}

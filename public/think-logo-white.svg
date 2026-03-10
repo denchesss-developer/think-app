@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" fill="none">
+  <!-- Simbolo architettonico — linee curve convergenti (versione bianca) -->
+  <g stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round">
+    <!-- Verticale sinistra -->
+    <line x1="22" y1="10" x2="22" y2="100"/>
+    <!-- Linea base obliqua verso destra -->
+    <line x1="22" y1="100" x2="78" y2="58"/>
+    <!-- Linee a ventaglio convergenti verso il basso-destra -->
+    <path d="M22 16 Q54 28 78 56"/>
+    <path d="M22 28 Q52 38 74 58"/>
+    <path d="M22 40 Q50 48 70 60"/>
+    <path d="M22 52 Q46 56 66 62"/>
+  </g>
+  <!-- Testo Think in serif (bianco) -->
+  <text x="88" y="88" font-family="Georgia,'Times New Roman',serif" font-size="76" font-weight="700" fill="#ffffff" letter-spacing="-1">Think</text>
+</svg>
