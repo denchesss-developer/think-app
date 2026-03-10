@@ -33,7 +33,9 @@ export async function POST(req: Request) {
       // AZIONE 2: CANCELLA
       else if (action === 'del') {
         if (targetRisp !== 'null') {
-          // Cancella la Risposta (Commento)
+          // Cancella la Risposta (Commento) e le sue segnalazioni
+          await supabaseAdmin.from('segnalazioni').delete().eq('risposta_id', targetRisp);
+          
           const { error } = await supabaseAdmin.from('risposte').delete().eq('id', targetRisp);
           if (error) {
             console.error('Errore cancellazione risposta:', error);
@@ -44,14 +46,18 @@ export async function POST(req: Request) {
           }
         } 
         else if (targetChat !== 'null') {
-          // Cancella la Chat Primaria
+          // Cancella la Chat Primaria e tutti i record figli associati (Cascading Delete manuale)
+          await supabaseAdmin.from('segnalazioni').delete().eq('chat_id', targetChat);
+          await supabaseAdmin.from('bookmarks').delete().eq('chat_id', targetChat);
+          await supabaseAdmin.from('risposte').delete().eq('chat_id', targetChat);
+
           const { error } = await supabaseAdmin.from('chats').delete().eq('id', targetChat);
           if (error) {
             console.error('Errore cancellazione chat:', error);
             errorOccurred = true;
             errorDetails = error.message;
           } else {
-            responseText = '🔴 Pensiero (Chat) cancellato dal database.';
+            responseText = '🔴 Pensiero (Chat) cancellato dal database assieme a commenti e salvataggi.';
           }
         }
       }
