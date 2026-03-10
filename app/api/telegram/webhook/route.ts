@@ -23,6 +23,7 @@ export async function POST(req: Request) {
 
       let responseText = '';
       let errorOccurred = false;
+      let errorDetails = '';
 
       // AZIONE 1: IGNORA
       if (action === 'ign') {
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
           if (error) {
             console.error('Errore cancellazione risposta:', error);
             errorOccurred = true;
+            errorDetails = error.message;
           } else {
             responseText = '🔴 Risposta cancellata dal database.';
           }
@@ -47,6 +49,7 @@ export async function POST(req: Request) {
           if (error) {
             console.error('Errore cancellazione chat:', error);
             errorOccurred = true;
+            errorDetails = error.message;
           } else {
             responseText = '🔴 Pensiero (Chat) cancellato dal database.';
           }
@@ -55,7 +58,7 @@ export async function POST(req: Request) {
 
       // Se c'è stato un errore su Supabase non nascondiamo il messaggio originale, avvisiamo solo l'admin
       if (errorOccurred) {
-        responseText = '❌ Errore durante la cancellazione su Supabase. Controlla i log.';
+        responseText = `❌ Errore DB: ${errorDetails || 'Controlla i log.'}`;
       }
 
       // Answer Callback Query per mostrare il toast su Telegram
