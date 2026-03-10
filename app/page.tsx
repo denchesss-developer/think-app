@@ -160,10 +160,14 @@ export default function ThinkApp() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchChats().catch(e => console.error("DEBUG: fetchChats failed early:", e))
 
-    // Session ID Logic (Device Identity)
+    // Session ID Logic (Device Identity) - Safe Fallback for crypto.randomUUID
     let currentSessionId = localStorage.getItem('think_session_id')
     if (!currentSessionId) {
-      currentSessionId = crypto.randomUUID()
+      try {
+        currentSessionId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)
+      } catch (e) {
+        currentSessionId = Math.random().toString(36).substring(2, 15)
+      }
       localStorage.setItem('think_session_id', currentSessionId)
     }
     setSessionId(currentSessionId)
@@ -179,8 +183,8 @@ export default function ThinkApp() {
 
     // ALERT DIAGNOSTICO IMMEDIATO E PULIZIA URL
     if (typeof window !== 'undefined') {
-      (window as any).THINK_VERSION = "v4"
-      console.warn("DEBUG/ALERT: Think App v4 Loaded")
+      (window as any).THINK_VERSION = "v5"
+      console.warn("DEBUG/ALERT: Think App v5 Loaded")
 
       // Handle OAuth token - deve essere processato PRIMA di getSession
       const processOAuth = async () => {
@@ -745,8 +749,9 @@ export default function ThinkApp() {
         </div>
       </div>
 
-      <div className="bg-red-500/20 border border-red-500/30 p-3 text-[12px] font-black text-red-500 text-center mb-6 rounded-2xl uppercase tracking-widest animate-pulse">
-        ⚠️ DEBUG MODE v4 - SEEDI QUESTO È AGGIORNATO ⚠️
+      {/* DEBUG BANNER v5 */}
+      <div className="bg-red-500 text-white text-center py-2 font-black tracking-widest animate-pulse shadow-2xl relative z-50 text-sm">
+        ⚠️ DEBUG MODE v5 - SE VEDI QUESTO È AGGIORNATO ⚠️
       </div>
       <div className="mt-4">
         {chatsFiltrate.map(chat => <ChatCard key={chat.id} chat={chat} onClick={apriChat} />)}
