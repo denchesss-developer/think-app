@@ -81,6 +81,10 @@ export default function ThinkApp() {
   const [mostraModaleComponi, setMostraModaleComponi] = useState(false)
 
   const [utenteLoggato, setUtenteLoggato] = useState<Utente | null>(null)
+  // Session ID per anonimi
+  const [sessionId, setSessionId] = useState<string | null>(null)
+
+  // Modali e Stati Variabili
   const [mostraPopupLogin, setMostraPopupLogin] = useState(false)
   const [mostraPopupBenvenuto, setMostraPopupBenvenuto] = useState(false)
   const [mostraPopupNicknameObbligatorio, setMostraPopupNicknameObbligatorio] = useState(false)
@@ -156,14 +160,22 @@ export default function ThinkApp() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchChats().catch(e => console.error("DEBUG: fetchChats failed early:", e))
 
+    // Session ID Logic (Device Identity)
+    let currentSessionId = localStorage.getItem('think_session_id')
+    if (!currentSessionId) {
+      currentSessionId = crypto.randomUUID()
+      localStorage.setItem('think_session_id', currentSessionId)
+    }
+    setSessionId(currentSessionId)
+
     // NICKNAME LOGIC
     let nickLocale = localStorage.getItem('think_nickname')
     if (!nickLocale) {
-      nickLocale = `${ANIMALI[Math.floor(Math.random() * ANIMALI.length)]}_${AGGETTIVI[Math.floor(Math.random() * AGGETTIVI.length)]}_${Math.floor(Math.random() * 100)}`
-      localStorage.setItem('think_nickname', nickLocale)
+      // Non impostiamo subito il nome local, forziamo il popup a deciderlo e validarlo sul server.
       setMostraPopupBenvenuto(true)
+    } else {
+      setMioNickname(nickLocale)
     }
-    setMioNickname(nickLocale)
 
     // ALERT DIAGNOSTICO IMMEDIATO E PULIZIA URL
     if (typeof window !== 'undefined') {
@@ -454,49 +466,104 @@ export default function ThinkApp() {
     }
   }
 
-  async function handleCompleteProfile(chosenNick: string): Promise<{ error: any }> {
-    if (!utenteLoggato) return { error: new Error("Utente non loggato") }
+  async function salvaNicknameSoloLocale(nickDaSalvare?: string) {
+    const targetNick = nickDaSalvare || mioNickname
+    if (!targetNick.trim()) return { error: "Nome non valido" }
 
-    // Usa upsert per gestire sia nuovi profili che profili già creati da trigger
-    const { error } = await supabase.from('profiles').upsert([{
-      id: utenteLoggato.id,
-      nickname: chosenNick
-    }]).select()
+    // Rimuoviamo il Regex se vuoi permettere spazi? No, manteniamo lo standard.
+    const err = nicknameErrorMessage(targetNick)
+    if (err) return { error: err }
 
-    if (!error) {
-      setMioNickname(chosenNick)
-      localStorage.setItem('think_nickname', chosenNick)
-      setMostraPopupNicknameObbligatorio(false)
+    if (sessionId) {
+      // Chiama l'RPC per riservare il nickname provvisoriamente
+      const { data, error } = await supabase.rpc('reserve_provisional_nickname', {
+        p_nickname: targetNick.trim(),
+        p_session_id: sessionId
+      })
+
+      if (error) {
+        console.error("DEBUG: Error reserving provisional nickname", error)
+        return { error: "Errore di connessione." }
+      }
+
+      if (!data.success) {
+        if (data.error === 'nickname_taken_by_user') return { error: "Nickname preso da un utente registrato." }
+        if (data.error === 'nickname_taken_by_guest') return { error: "Nickname preso da un altro ospite ora." }
+        return { error: "Nickname non disponibile." }
+      }
     }
-    return { error }
+
+    // Se successo (o niente error)
+    localStorage.setItem('think_nickname', targetNick.trim())
+    setMioNickname(targetNick.trim())
+    setMostraPopupBenvenuto(false)
+    return { success: true }
+  }
+
+  // --- Chiamato dalla modale Obbligatoria O da Account --- 
+  async function handleCompleteProfile(nickFinale: string) {
+    const nickPulito = nickFinale.trim()
+    const err = nicknameErrorMessage(nickPulito)
+    if (err) return { error: { message: err } }
+
+    // RPC SICURO (Evita furti tra la query e l'insert, controllando anche la tabella guest)
+    const { data, error } = await supabase.rpc('claim_definitive_nickname', {
+      p_nickname: nickPulito,
+      p_session_id: sessionId || null
+    })
+
+    if (error) {
+      console.error("DEBUG: RPC error claiming nickname", error)
+      return { error: { code: 'OTHER' } }
+    }
+
+    if (!data.success) {
+      if (data.error === 'nickname_taken_by_user') return { error: { code: '23505' } } // Simula l'errore unique constraint
+      if (data.error === 'nickname_taken_by_guest') return { error: { code: '23505' } }
+      return { error: { code: 'OTHER' } }
+    }
+
+    // Claim riuscito (aggiornamento account avvenuto sul db). Ora ricarico cache locale.        
+    localStorage.setItem('think_nickname', nickPulito)
+    setMioNickname(nickPulito)
+    setMostraPopupNicknameObbligatorio(false)
+    return { error: null }
   }
 
   async function handleSaveNickname(newNick: string): Promise<{ success: boolean; error?: string }> {
     const err = nicknameErrorMessage(newNick)
     if (err) return { success: false, error: err }
 
-    // Se loggato, salviamo su DB
+    // Se loggato, salviamo su DB in modo definitivo
     if (utenteLoggato) {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({ id: utenteLoggato.id, nickname: newNick })
+      const { data, error } = await supabase.rpc('claim_definitive_nickname', {
+        p_nickname: newNick,
+        p_session_id: sessionId || null
+      })
 
-      if (error) {
-        if (error.code === '23505') return { success: false, error: "Nickname già occupato da un altro utente" }
-        return { success: false, error: "Errore durante il salvataggio su database" }
+      if (error) return { success: false, error: "Errore durante il salvataggio su database" }
+      if (!data.success) {
+        if (data.error === 'nickname_taken_by_user') return { success: false, error: "Nickname già occupato da un altro utente" }
+        if (data.error === 'nickname_taken_by_guest') return { success: false, error: "Nickname temporaneamente bloccato da un ospite" }
+        return { success: false, error: "Nickname non disponibile" }
       }
     } else {
-      // Se non loggato, controlliamo comunque se il nick è preso da un utente registrato
-      const { data } = await supabase
-        .from('profiles')
-        .select('nickname')
-        .eq('nickname', newNick)
-        .single()
-
-      if (data) return { success: false, error: "Questo nickname è riservato a un utente registrato" }
+      // Se non loggato, proviamo a riservarlo come anonimi
+      if (sessionId) {
+        const { data, error } = await supabase.rpc('reserve_provisional_nickname', {
+          p_nickname: newNick,
+          p_session_id: sessionId
+        })
+        if (error) return { success: false, error: "Errore di connessione" }
+        if (!data.success) {
+          if (data.error === 'nickname_taken_by_user') return { success: false, error: "Nickname già occupato da un altro utente" }
+          if (data.error === 'nickname_taken_by_guest') return { success: false, error: "Nickname già in uso da un ospite" }
+          return { success: false, error: "Nickname non disponibile" }
+        }
+      }
     }
 
-    // In ogni caso, salviamo in locale
+    // In ogni caso di successo, salviamo in locale
     localStorage.setItem('think_nickname', newNick)
     setMioNickname(newNick)
     return { success: true }
@@ -616,14 +683,6 @@ export default function ThinkApp() {
     setLoginLoading(false)
     if (error) setLoginError(error.message)
     else setLoginSent(true)
-  }
-
-  function salvaNicknameSoloLocale() {
-    if (!mioNickname.trim()) return
-    const err = nicknameErrorMessage(mioNickname)
-    if (err) { alert(err); return }
-    localStorage.setItem('think_nickname', mioNickname)
-    setMostraPopupBenvenuto(false)
   }
 
   // Views Renderers

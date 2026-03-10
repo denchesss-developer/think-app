@@ -26,7 +26,7 @@ interface ModalsContainerProps {
   utenteLoggato: Utente | null
   mioNickname: string
   setMioNickname: (v: string) => void
-  salvaNicknameSoloLocale: () => void
+  salvaNicknameSoloLocale: () => Promise<{ success?: boolean; error?: string }>
 
   mostraPopupLogin: boolean
   setMostraPopupLogin: (v: boolean) => void
@@ -53,6 +53,9 @@ export function ModalsContainer({
   const [localNick, setLocalNick] = React.useState("")
   const [completeLoading, setCompleteLoading] = React.useState(false)
   const [completeError, setCompleteError] = React.useState("")
+  
+  const [welcomeLoading, setWelcomeLoading] = React.useState(false)
+  const [welcomeError, setWelcomeError] = React.useState("")
 
   React.useEffect(() => {
     if (mostraPopupNicknameObbligatorio) {
@@ -129,14 +132,39 @@ export function ModalsContainer({
           <p className="font-medium mb-8 text-[15px] text-[var(--color-text-muted)] leading-relaxed">
             Scegli un nome per farti riconoscere dagli altri esploratori.
           </p>
-          <Input 
-            type="text" 
-            className="text-center text-xl font-bold mb-6 py-5 px-6" 
-            value={mioNickname} 
-            onChange={(e) => setMioNickname(e.target.value)} 
-          />
-          <Button onClick={salvaNicknameSoloLocale} size="lg" className="w-full py-5 text-base">
-            Salva Nome
+          <div className="space-y-1 mb-6">
+            <Input 
+              type="text" 
+              className="text-center text-xl font-bold py-5 px-6" 
+              value={mioNickname} 
+              onChange={(e) => {
+                setMioNickname(e.target.value)
+                setWelcomeError("")
+              }} 
+              disabled={welcomeLoading}
+            />
+            {welcomeError && (
+              <p className="text-red-400 text-[11px] font-bold mt-2 bg-red-400/10 py-1.5 px-3 rounded-lg border border-red-400/20">
+                {welcomeError}
+              </p>
+            )}
+          </div>
+          
+          <Button 
+            onClick={async () => {
+              setWelcomeError("")
+              setWelcomeLoading(true)
+              const res = await salvaNicknameSoloLocale()
+              setWelcomeLoading(false)
+              if (res && res.error) {
+                setWelcomeError(res.error)
+              }
+            }} 
+            disabled={welcomeLoading || !mioNickname.trim()}
+            size="lg" 
+            className="w-full py-5 text-base"
+          >
+            {welcomeLoading ? "Salvataggio..." : "Salva Nome"}
           </Button>
         </GlassPanel>
       </div>
