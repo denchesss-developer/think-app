@@ -167,8 +167,8 @@ export default function ThinkApp() {
 
     // ALERT DIAGNOSTICO IMMEDIATO
     if (typeof window !== 'undefined') {
-      console.warn("DEBUG: App version starting... (Alert check)")
-      // alert("APP START: Versione con Nickname Obbligatorio ATTIVA!")
+      (window as any).THINK_VERSION = "v4"
+      console.warn("DEBUG/ALERT: Think App v4 Loaded")
     }
 
     // Check for Auth Errors in URL (e.g. bad_oauth_state)
@@ -497,10 +497,11 @@ export default function ThinkApp() {
     setLoginLoading(true)
     setLoginError('')
     // Fallback on origin guarantees that the PWA resumes at the EXACT path it left off
-    // In production, we force the redirect to the main domain to avoid OAuth state mismatches
+    // Cache-busting for redirect to avoid Cloudflare/Browser issues
+    const ts = Date.now()
     const redirectTo = window.location.hostname === 'thethink.space' 
-      ? 'https://thethink.space' 
-      : window.location.origin
+      ? `https://thethink.space/?v=${ts}` 
+      : `${window.location.origin}/?v=${ts}`
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -595,8 +596,8 @@ export default function ThinkApp() {
         </div>
       </div>
 
-      <div className="bg-yellow-500/10 border border-yellow-500/20 p-2 text-[10px] font-black text-yellow-500 text-center mb-4 rounded-xl uppercase tracking-tighter">
-        DEBUG MODE v3 - Se vedi questo, l'app è aggiornata
+      <div className="bg-red-500/20 border border-red-500/30 p-3 text-[12px] font-black text-red-500 text-center mb-6 rounded-2xl uppercase tracking-widest animate-pulse">
+        ⚠️ DEBUG MODE v4 - SEEDI QUESTO È AGGIORNATO ⚠️
       </div>
       <div className="mt-4">
         {chatsFiltrate.map(chat => <ChatCard key={chat.id} chat={chat} onClick={apriChat} />)}
