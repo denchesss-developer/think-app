@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 280" fill="none">
+  <!-- Simbolo architettonico a sinistra -->
+  <g stroke="currentColor" stroke-width="4" fill="none">
+    <!-- Linea verticale principale -->
+    <line x1="95" y1="40" x2="95" y2="230"/>
+    <!-- Linee curve che si aprono verso destra -->
+    <path d="M95 45 Q180 80 220 130"/>
+    <path d="M95 65 Q170 95 205 140"/>
+    <path d="M95 85 Q160 110 190 150"/>
+    <path d="M95 105 Q150 130 178 160"/>
+    <!-- Linea base obliqua -->
+    <line x1="95" y1="230" x2="230" y2="130"/>
+  </g>
+  <!-- Testo Think -->
+  <text x="240" y="200" font-family="Georgia, 'Times New Roman', serif" font-size="160" font-weight="700" fill="currentColor">hink</text>
+  <!-- "T" di Think con serif che si integra con il simbolo -->
+  <text x="95" y="200" font-family="Georgia, 'Times New Roman', serif" font-size="160" font-weight="700" fill="currentColor">T</text>
+</svg>

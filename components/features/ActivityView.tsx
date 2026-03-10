@@ -1,9 +1,8 @@
 "use client"
 
 import React from "react"
-import { Pencil, MessageSquare, Bookmark } from "lucide-react"
+import { Pencil, MessageSquare, Bookmark, Clock, Flame } from "lucide-react"
 import { Button } from "@/components/ui/Button"
-import { timeAgo } from "@/components/features/ChatCard"
 
 interface ActivityViewProps {
   utenteLoggato: Utente | null
@@ -67,13 +66,14 @@ export function ActivityView({
         </p>
       </div>
 
-      {/* I miei Pensieri */}
+      {/* I miei Pensieri — con statistiche */}
       <ActivitySection
         icon={<Pencil className="w-4 h-4" />}
         title="I miei Pensieri"
         items={myThinks}
         onSelect={apriChat}
         emptyMsg="Non hai ancora creato nessun pensiero."
+        showStats
       />
 
       {/* Le mie Risposte */}
@@ -97,12 +97,13 @@ export function ActivityView({
   )
 }
 
-function ActivitySection({ icon, title, items, onSelect, emptyMsg }: { 
+function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats }: { 
   icon: React.ReactNode
   title: string
   items: Chat[]
   onSelect: (c: Chat) => void
-  emptyMsg: string 
+  emptyMsg: string
+  showStats?: boolean
 }) {
   const validItems = items.filter(Boolean)
   return (
@@ -122,19 +123,53 @@ function ActivitySection({ icon, title, items, onSelect, emptyMsg }: {
         </div>
       ) : (
         <div className="space-y-2">
-          {validItems.map((c, idx) => (
-            <button
-              key={`${c.id}-${idx}`}
-              type="button"
-              onClick={() => onSelect(c)}
-              className="w-full text-left p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-hover)] transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
-            >
-              <div className="font-bold text-[14px] mb-1.5 text-[var(--color-text-main)]">{c.titolo}</div>
-              <div className="text-[11px] font-bold text-[var(--color-text-faint)] tracking-wide">
-                <span className="uppercase">{c.regione}</span> • {timeAgo(c.ultima_attivita || c.created_at)}
-              </div>
-            </button>
-          ))}
+          {validItems.map((c, idx) => {
+            const giorni = Math.floor((Date.now() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24))
+            const vitaLabel = giorni === 0 ? 'Oggi' : giorni === 1 ? '1g' : `${giorni}g`
+            const haUltimaAtt = c.ultima_attivita && c.ultima_attivita !== c.created_at
+            const gapRinascita = haUltimaAtt
+              ? Math.floor((new Date(c.ultima_attivita!).getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24 * 7))
+              : 0
+            const rinascite = Math.max(0, gapRinascita)
+
+            return (
+              <button
+                key={`${c.id}-${idx}`}
+                type="button"
+                onClick={() => onSelect(c)}
+                className="w-full text-left p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] hover:bg-[var(--color-bg-hover)] transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+              >
+                <div className="font-bold text-[14px] mb-2 text-[var(--color-text-main)]">{c.titolo}</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-bold text-[var(--color-text-faint)] uppercase tracking-wide">{c.regione}</span>
+
+                  {showStats && (
+                    <>
+                      {/* Risposte ricevute */}
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-text-muted)] bg-[var(--color-bg-hover)] px-2 py-0.5 rounded-full">
+                        <MessageSquare className="w-3 h-3" />
+                        {c.risposte_count || 0}
+                      </span>
+
+                      {/* Vita del pensiero */}
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-text-muted)] bg-[var(--color-bg-hover)] px-2 py-0.5 rounded-full">
+                        <Clock className="w-3 h-3" />
+                        {vitaLabel}
+                      </span>
+
+                      {/* Rinascite */}
+                      {rinascite > 0 && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                          <Flame className="w-3 h-3" />
+                          {rinascite}×
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+              </button>
+            )
+          })}
         </div>
       )}
     </div>

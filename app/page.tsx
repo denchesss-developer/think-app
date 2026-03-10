@@ -365,7 +365,10 @@ export default function ThinkApp() {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: siteUrl }
+      options: {
+        redirectTo: siteUrl,
+        queryParams: { prompt: 'select_account' }
+      }
     })
     if (error) {
       setLoginError(error.message)
@@ -414,9 +417,13 @@ export default function ThinkApp() {
   const renderFeedContent = () => (
     <div className="fade-in-up md:animate-in md:duration-500 pb-10">
       <div className="sticky top-0 z-[40] pb-2 pt-2 -mx-6 px-6 bg-[var(--color-bg-panel)] backdrop-blur-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-b border-[var(--color-border-subtle)]">
-        <div className="lg:hidden mb-3">
-          <h2 className="text-[28px] font-black tracking-tight text-center">Feed</h2>
-          <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center">Pensieri dal mondo</p>
+        <div className="lg:hidden mb-3 flex flex-col items-center">
+          <img 
+            src="/logo.svg" 
+            alt="Think" 
+            className="h-10 w-auto dark:invert object-contain"
+          />
+          <p className="text-[12px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center mt-1">Pensieri dal mondo</p>
         </div>
         <Input 
           icon={<Search className="w-4 h-4 text-[var(--color-text-faint)]" />} 
