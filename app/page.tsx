@@ -156,14 +156,19 @@ export default function ThinkApp() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchChats().catch(e => console.error("DEBUG: fetchChats failed early:", e))
 
-    // NICKNAME LOGIC
+    // NICKNAME LOGIC - Solo per utenti NON loggati
     let nickLocale = localStorage.getItem('think_nickname')
-    if (!nickLocale) {
+    if (!nickLocale && !utenteLoggato) {
       nickLocale = `${ANIMALI[Math.floor(Math.random() * ANIMALI.length)]}_${AGGETTIVI[Math.floor(Math.random() * AGGETTIVI.length)]}_${Math.floor(Math.random() * 100)}`
       localStorage.setItem('think_nickname', nickLocale)
       setMostraPopupBenvenuto(true)
+    } else if (!nickLocale && utenteLoggato) {
+      // Se è loggato ma non ha nickname, non generiamo nulla qui - syncProfile gestirà il popup
+      nickLocale = ''
     }
-    setMioNickname(nickLocale)
+    if (nickLocale) {
+      setMioNickname(nickLocale)
+    }
 
     // ALERT DIAGNOSTICO IMMEDIATO E PULIZIA URL
     if (typeof window !== 'undefined') {
@@ -175,16 +180,16 @@ export default function ThinkApp() {
         // PRIMA DI TUTTO: se c'è un hash con token, pulisci tutto e basta
         if (window.location.hash.includes('access_token')) {
           console.warn("DEBUG: Hash with access_token detected, cleaning URL first...")
-          
+
           // Estrai SOLO il primo access_token
           const hash = window.location.hash
           // Trova il primo access_token=
           const tokenMatch = hash.match(/access_token=([^&#]+)/)
           const refreshMatch = hash.match(/refresh_token=([^&#]+)/)
-          
+
           const accessToken = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null
           const refreshToken = refreshMatch ? decodeURIComponent(refreshMatch[1]) : null
-          
+
           if (accessToken) {
             console.warn("DEBUG: Setting session with first access_token...")
             try {
@@ -192,7 +197,7 @@ export default function ThinkApp() {
                 access_token: accessToken,
                 refresh_token: refreshToken || ''
               })
-              
+
               if (error) {
                 console.error("DEBUG: setSession error:", error.message)
               } else if (data.session) {
@@ -203,7 +208,7 @@ export default function ThinkApp() {
               console.error("DEBUG: Exception in setSession:", e)
             }
           }
-          
+
           // Pulisci URL DOPO
           window.history.replaceState(null, '', window.location.pathname)
         }
@@ -389,6 +394,9 @@ export default function ThinkApp() {
   async function syncProfile() {
     if (!utenteLoggato) return
     console.log("DEBUG: syncProfile started for", utenteLoggato.id)
+
+    // Ritarda leggermente per assicurare che lo stato sia pronto
+    await new Promise(resolve => setTimeout(resolve, 100))
 
     try {
       const { data, error } = await supabase
