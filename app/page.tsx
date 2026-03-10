@@ -177,44 +177,52 @@ export default function ThinkApp() {
 
       // Handle OAuth token - deve essere processato PRIMA di getSession
       const processOAuth = async () => {
-        // PRIMA DI TUTTO: se c'è un hash con token, pulisci tutto e basta
-        if (window.location.hash.includes('access_token')) {
-          console.warn("DEBUG: Hash with access_token detected, cleaning URL first...")
-
-          // Estrai SOLO il primo access_token
-          const hash = window.location.hash
-          // Trova il primo access_token=
-          const tokenMatch = hash.match(/access_token=([^&#]+)/)
-          const refreshMatch = hash.match(/refresh_token=([^&#]+)/)
-
-          const accessToken = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null
-          const refreshToken = refreshMatch ? decodeURIComponent(refreshMatch[1]) : null
-
-          if (accessToken) {
-            console.warn("DEBUG: Setting session with first access_token...")
-            try {
-              const { data, error } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken || ''
-              })
-
-              if (error) {
-                console.error("DEBUG: setSession error:", error.message)
-              } else if (data.session) {
-                console.warn("DEBUG: Session set! User:", data.session.user.email)
-                setUtenteLoggato(data.session.user as unknown as Utente)
-              }
-            } catch (e) {
-              console.error("DEBUG: Exception in setSession:", e)
-            }
-          }
-
-          // Pulisci URL DOPO
-          window.history.replaceState(null, '', window.location.pathname)
+        const hash = window.location.hash
+        console.warn("DEBUG: Hash length:", hash.length)
+        
+        // Cerca semplicemente access_token=
+        const tokenStart = hash.indexOf('access_token=')
+        if (tokenStart === -1) {
+          console.warn("DEBUG: No access_token found")
+          return
         }
+        
+        // Estrai il token
+        const tokenPart = hash.substring(tokenStart + 13) // 13 = length of 'access_token='
+        const accessToken = tokenPart.split('&')[0]
+        
+        // Trova refresh_token
+        const refreshStart = hash.indexOf('refresh_token=')
+        const refreshToken = refreshStart > -1 ? hash.substring(refreshStart + 14).split('&')[0] : ''
+        
+        console.warn("DEBUG: Found access_token, length:", accessToken.length)
+        
+        if (accessToken && accessToken.length > 10) {
+          console.warn("DEBUG: Setting session...")
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || ''
+            })
+            
+            if (error) {
+              console.error("DEBUG: setSession error:", error.message)
+            } else if (data.session) {
+              console.warn("DEBUG: Session set! User:", data.session.user.email)
+              setUtenteLoggato(data.session.user as unknown as Utente)
+            }
+          } catch (e) {
+            console.error("DEBUG: Exception:", e)
+          }
+        }
+        
+        // Pulisci URL
+        window.history.replaceState(null, '', window.location.pathname)
       }
-
-      // Esegui subito
+      
+      // Esegui
+      processOAuth()
+    }
       processOAuth()
     }
 
