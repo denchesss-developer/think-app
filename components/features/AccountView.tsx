@@ -102,7 +102,7 @@ export function AccountView({
         <h2 className="text-[28px] font-black tracking-tight mb-1">Account</h2>
         <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
           {utenteLoggato.app_metadata?.provider === "google" ? "Connesso con Google" : "Connesso via Email"}
-          <span className="block mt-1 lowercase font-medium tracking-normal text-[var(--color-text-main)] sm:inline sm:mt-0 sm:ml-2">{utenteLoggato.email}</span>
+          <span className="block mt-1 font-medium tracking-normal text-[var(--color-text-main)] sm:inline sm:mt-0 sm:ml-2">Account verificato</span>
         </p>
       </div>
 
