@@ -165,10 +165,16 @@ export default function ThinkApp() {
     }
     setMioNickname(nickLocale)
 
-    // ALERT DIAGNOSTICO IMMEDIATO
+    // ALERT DIAGNOSTICO IMMEDIATO E PULIZIA URL
     if (typeof window !== 'undefined') {
       (window as any).THINK_VERSION = "v4"
       console.warn("DEBUG/ALERT: Think App v4 Loaded")
+
+      // Se l'URL contiene ## o più frammenti sporchi, puliamolo
+      if (window.location.hash.includes('##') || (window.location.hash.split('access_token').length > 2)) {
+        console.warn("DEBUG: Corrupted fragment detected, cleaning URL...")
+        window.history.replaceState(null, "", window.location.pathname + window.location.search)
+      }
     }
 
     // Check for Auth Errors in URL (e.g. bad_oauth_state)
@@ -502,11 +508,14 @@ export default function ThinkApp() {
     const redirectTo = window.location.hostname === 'thethink.space' 
       ? `https://thethink.space/?v=${ts}` 
       : `${window.location.origin}/?v=${ts}`
+    
+    // Assicuriamoci che non ci siano frammenti residui nel redirectTo
+    const cleanRedirectTo = redirectTo.split('#')[0]
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo,
+        redirectTo: cleanRedirectTo,
         queryParams: { prompt: 'select_account' }
       }
     })
