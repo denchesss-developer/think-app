@@ -305,18 +305,39 @@ export default function ThinkApp() {
 
   async function syncProfile() {
     if (!utenteLoggato) return
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('nickname')
-      .eq('id', utenteLoggato.id)
-      .single()
+    console.log("DEBUG: syncProfile started for", utenteLoggato.id)
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('nickname')
+        .eq('id', utenteLoggato.id)
+        .single()
 
-    if (data?.nickname) {
-      setMioNickname(data.nickname)
-      localStorage.setItem('think_nickname', data.nickname)
-    } else if (error?.code === 'PGRST116') {
-      // Se il profilo non esiste ancora, mostriamo il popup obbligatorio
-      setMostraPopupNicknameObbligatorio(true)
+      if (error) {
+        console.log("DEBUG: syncProfile error:", error.code, error.message)
+        if (error.code === 'PGRST116') {
+          console.log("DEBUG: No profile found. Triggering mandatory modal.")
+          setMostraPopupNicknameObbligatorio(true)
+          setMostraPopupBenvenuto(false)
+          setMostraPopupLogin(false)
+        } else {
+          console.error("DEBUG: Unexpected error fetching profile:", error)
+        }
+        return
+      }
+
+      if (data?.nickname) {
+        console.log("DEBUG: Profile found, nickname is:", data.nickname)
+        setMioNickname(data.nickname)
+        localStorage.setItem('think_nickname', data.nickname)
+        setMostraPopupNicknameObbligatorio(false)
+      } else {
+        console.log("DEBUG: Profile exists but has no nickname. Triggering mandatory modal.")
+        setMostraPopupNicknameObbligatorio(true)
+      }
+    } catch (err) {
+      console.error("DEBUG: Exception in syncProfile:", err)
     }
   }
 
