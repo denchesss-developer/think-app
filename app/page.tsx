@@ -360,27 +360,39 @@ export default function ThinkApp() {
   }
 
   async function accediConGoogle(idToken?: string) {
-    if (!idToken) return
-    
     setLoginLoading(true)
     setLoginError('')
     
-    // Auth PWA-friendly per non uscire dall'app con Google Identity Services
-    const { data, error } = await supabase.auth.signInWithIdToken({
+    // Se passiamo l'idToken (es: dal Google One Tap), facciamo login istantaneo silenzioso senza finestre
+    if (idToken) {
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: idToken,
+      })
+      if (!error && data.session) {
+        setMostraPopupLogin(false)
+        setLoginLoading(false)
+        window.location.reload()
+      } else {
+        setLoginError(error?.message || 'Token error')
+        setLoginLoading(false)
+      }
+      return
+    }
+
+    // Se CLICCHIAMO il bottone Custom, apriamo il popup OAuth classico (ma senza far crashare PWA)
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      token: idToken,
+      options: {
+        redirectTo: `${siteUrl}/auth/callback`, // Usiamo un callback per redirigere a '/' senza rompere la tab corrente
+        queryParams: { prompt: 'select_account' }
+      }
     })
 
     if (error) {
       setLoginError(error.message)
       setLoginLoading(false)
-      return
-    }
-
-    if (data.session) {
-      setMostraPopupLogin(false)
-      setLoginLoading(false)
-      window.location.reload() // Ricarica lo stato dell'app con utente loggato
     }
   }
 

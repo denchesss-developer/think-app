@@ -3,7 +3,7 @@ import { X, Mail } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { Input, Textarea } from "@/components/ui/Input"
 import { GlassPanel } from "@/components/ui/Glass"
-import { GoogleLogin, useGoogleOneTapLogin, CredentialResponse } from '@react-oauth/google'
+import { useGoogleLogin, useGoogleOneTapLogin, CredentialResponse } from '@react-oauth/google'
 
 export const GoogleLogo = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -58,6 +58,18 @@ export function ModalsContainer({
     },
     cancel_on_tap_outside: false
   });
+
+  const customGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      // Dato che l'implicit flow restituisce access_token e non id_token,
+      // per il login nativo col tasto custom richiamiamo il vecchio metodo di Supabase
+      // che si interfaccia benissimo con thethink.space. Oppure carichiamo l'id_token.
+      // E' preferibile passare il controllo al page.tsx per il popup PWA-friendly di Supabase.
+      // Dobbiamo re-inizializzare il popup oauth di Supabase per questo bottone.
+      accediConGoogle()
+    },
+    onError: () => console.log('Login failed'),
+  })
 
   return (
     <>
@@ -146,21 +158,16 @@ export function ModalsContainer({
                     <div className="h-6 w-6 rounded-full border-2 border-[var(--color-text-main)] border-t-transparent animate-spin" />
                   </div>
                 ) : (
-                  <GoogleLogin
-                    onSuccess={credentialResponse => {
-                      if (credentialResponse.credential) {
-                        accediConGoogle(credentialResponse.credential)
-                      }
-                    }}
-                    onError={() => {
-                      console.error('Google Login Click Failed')
-                    }}
-                    shape="rectangular"
-                    theme="outline"
-                    text="continue_with"
-                    size="large"
-                    width="100%"
-                  />
+                  <Button
+                    onClick={() => customGoogleLogin()}
+                    disabled={loginLoading}
+                    variant="secondary"
+                    size="lg"
+                    className="w-full gap-3 py-4 text-[15px] hover:bg-[var(--color-bg-hover)]"
+                  >
+                    <div className="bg-white p-1 rounded-sm"><GoogleLogo /></div>
+                    Continua con Google
+                  </Button>
                 )}
               </div>
 
