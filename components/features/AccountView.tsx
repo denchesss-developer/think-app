@@ -18,9 +18,9 @@ interface AccountViewProps {
 }
 
 export function AccountView({
-  utenteLoggato, 
-  mioNickname, 
-  setMioNickname, 
+  utenteLoggato,
+  mioNickname,
+  setMioNickname,
   onSaveNickname,
   nicknameErrorMessage,
   accountLoading,
@@ -28,7 +28,7 @@ export function AccountView({
   setAppTheme,
   logout
 }: AccountViewProps) {
-  
+
   if (!utenteLoggato) {
     return (
       <div className="space-y-6 pb-28 fade-in-up animate-in duration-500">
@@ -52,7 +52,7 @@ export function AccountView({
             <p className="text-[13px] font-medium text-[var(--color-text-muted)]">
               Crea un account per salvare pensieri, tenere traccia delle risposte e molto altro.
             </p>
-            <Button 
+            <Button
               onClick={() => window.dispatchEvent(new CustomEvent('open-login-modal'))}
               className="w-full mt-2"
             >
@@ -76,8 +76,8 @@ export function AccountView({
             </div>
             <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)]">
               <span className="font-bold text-[14px]">Tema App</span>
-              <select 
-                value={appTheme} 
+              <select
+                value={appTheme}
                 onChange={(e) => setAppTheme(e.target.value as AppTheme)}
                 className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right"
               >
@@ -101,7 +101,7 @@ export function AccountView({
       <div className="text-center">
         <h2 className="text-[28px] font-black tracking-tight mb-1">Account</h2>
         <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
-          {utenteLoggato.app_metadata?.provider === "google" ? "Connesso con Google" : "Connesso via Email"} 
+          {utenteLoggato.app_metadata?.provider === "google" ? "Connesso con Google" : "Connesso via Email"}
           <span className="block mt-1 lowercase font-medium tracking-normal text-[var(--color-text-main)] sm:inline sm:mt-0 sm:ml-2">{utenteLoggato.email}</span>
         </p>
       </div>
@@ -110,7 +110,7 @@ export function AccountView({
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-brand-amber-dim)] to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-[var(--color-bg-panel)] backdrop-blur-2xl -z-10" />
         <div className="absolute inset-0 border border-[var(--color-brand-amber)]/30 rounded-3xl pointer-events-none" />
-        
+
         <Badge variant="premium" className="mb-4">Pioniera di Think</Badge>
         <div className="text-[15px] font-medium text-[var(--color-text-main)]/80 leading-relaxed">
           Sei tra i primi esploratori ad utilizzare Think. Il tuo account ha il badge premium attivo.
@@ -122,12 +122,12 @@ export function AccountView({
           Il tuo Pseudonimo Globale
         </label>
         <div className="relative">
-          <Input 
+          <Input
             value={mioNickname}
             onChange={(e) => setMioNickname(e.target.value)}
             className="w-full font-bold pr-14 bg-[var(--color-bg-panel)] h-12 rounded-2xl border-[var(--color-border-subtle)]"
           />
-          <Button 
+          <Button
             size="icon"
             onClick={async () => {
               const res = await onSaveNickname(mioNickname)
@@ -140,14 +140,14 @@ export function AccountView({
             className="absolute right-1 top-1 bottom-1 w-10 h-10 rounded-xl"
             title="Salva"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
           </Button>
         </div>
         <p className="text-[11px] font-semibold text-[var(--color-text-faint)] ml-1">
           Solo lettere, numeri e underscore. 3–20 caratteri.
         </p>
       </div>
-      
+
       <div className="h-px bg-[var(--color-border-subtle)] my-8" />
 
       {accountLoading ? (
@@ -168,8 +168,8 @@ export function AccountView({
               </div>
               <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)]">
                 <span className="font-bold text-[14px]">Tema App</span>
-                <select 
-                  value={appTheme} 
+                <select
+                  value={appTheme}
                   onChange={(e) => setAppTheme(e.target.value as AppTheme)}
                   className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right"
                 >
@@ -182,9 +182,9 @@ export function AccountView({
                 <span className="font-bold text-[14px]">Notifiche Push</span>
                 <span className="text-[11px] uppercase tracking-widest font-bold text-[var(--color-brand-amber)]">Presto</span>
               </div>
-              
+
               {/* Sezione Feedback / Segnalazioni — Form Inline verso API Telegram */}
-              <FeedbackSection autore={utenteLoggato?.email?.split('@')[0] || 'Anonimo'} />
+              <FeedbackSection autore={utenteLoggato?.email ? 'Utente' : 'Anonimo'} />
             </div>
           </div>
         </div>

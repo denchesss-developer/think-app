@@ -55,7 +55,7 @@ type Mode = "feed" | "chat" | "account" | "activity"
 export default function ThinkApp() {
   const [appTheme, setAppTheme] = useState<AppTheme>("system")
   const [isDark, setIsDark] = useState(false)
-  
+
   // Desktop Sidebar State
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mode, setMode] = useState<Mode>("feed")
@@ -66,25 +66,25 @@ export default function ThinkApp() {
 
   const [chats, setChats] = useState<Chat[]>([])
   const [countries, setCountries] = useState<{ features: Record<string, unknown>[] }>({ features: [] })
-  
+
   const [chatAttiva, setChatAttiva] = useState<Chat | null>(null)
   const [risposte, setRisposte] = useState<Risposta[]>([])
   const [nuovaRisposta, setNuovaRisposta] = useState('')
-  
+
   const [mioNickname, setMioNickname] = useState('Anonimo')
   const [gpsSimulato, setGpsSimulato] = useState('roma')
   const [filtroAttivo, setFiltroAttivo] = useState('Recenti')
   const [testoRicerca, setTestoRicerca] = useState('')
-  
+
   // Modals state
   const [nuovoMessaggio, setNuovoMessaggio] = useState('')
   const [mostraModaleComponi, setMostraModaleComponi] = useState(false)
-  
+
   const [utenteLoggato, setUtenteLoggato] = useState<Utente | null>(null)
   const [mostraPopupLogin, setMostraPopupLogin] = useState(false)
   const [mostraPopupBenvenuto, setMostraPopupBenvenuto] = useState(false)
   const [mostraPopupNicknameObbligatorio, setMostraPopupNicknameObbligatorio] = useState(false)
-  
+
   const [emailLogin, setEmailLogin] = useState('')
   const [loginSent, setLoginSent] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
@@ -106,24 +106,24 @@ export default function ThinkApp() {
   async function fetchChats() {
     try {
       const mieCoord = await ottieniCoordinate()
-      
+
       // 1. Chats vicine
       const localRes = await supabase.rpc('chats_in_view', {
         lat_in: mieCoord.lat,
         lng_in: mieCoord.lng,
         radius_km: 500
       })
-      
+
       // 2. Archiviati globali (rimuoviamo risposte(count) per evitare errori 400 se restrizioni schema attive)
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
       const archRes = await supabase.from('chats').select('*').lt('created_at', twentyFourHoursAgo).order('created_at', { ascending: false }).limit(50)
 
       const merged = new Map<number, Chat>()
-      
+
       if (localRes.data) {
         localRes.data.forEach((c: Chat) => merged.set(c.id, c))
       }
-      
+
       if (archRes.data) {
         archRes.data.forEach((c: Chat) => {
           if (calcolaStatoVitale(c) === 'archivio') {
@@ -131,10 +131,10 @@ export default function ThinkApp() {
           }
         })
       }
-      
+
       const chatOrdinate = Array.from(merged.values())
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        
+
       setChats(chatOrdinate)
     } catch (err) {
       console.error("DEBUG: fetchChats error:", err)
@@ -170,17 +170,70 @@ export default function ThinkApp() {
       (window as any).THINK_VERSION = "v4"
       console.warn("DEBUG/ALERT: Think App v4 Loaded")
 
-      // Se l'URL contiene ## o più frammenti sporchi, puliamolo
-      if (window.location.hash.includes('##') || (window.location.hash.split('access_token').length > 2)) {
-        console.warn("DEBUG: Corrupted fragment detected, cleaning URL...")
-        window.history.replaceState(null, "", window.location.pathname + window.location.search)
+      // Handle OAuth token - deve essere processato PRIMA di getSession
+      const processOAuth = async () => {
+        const hash = window.location.hash
+
+        // Estrai parametri dall'URL fragment
+        const extractFragmentParams = (fragment: string) => {
+          const params: Record<string, string> = {}
+          const cleanFragment = fragment.startsWith('#') ? fragment.substring(1) : fragment
+          cleanFragment.split('&').forEach(pair => {
+            const [key, ...rest] = pair.split('=')
+            if (key) params[key] = decodeURIComponent(rest.join('=') || '')
+          })
+          return params
+        }
+
+        // Se c'è ## oppure #access_token
+        if (hash.includes('##') || hash.includes('#access_token')) {
+          console.warn("DEBUG: OAuth token detected in URL")
+          const params = extractFragmentParams(hash)
+
+          if (params.access_token) {
+            console.warn("DEBUG: Setting session with token...")
+
+            // Prima imposta la sessione
+            const { data, error } = await supabase.auth.setSession({
+              access_token: params.access_token,
+              refresh_token: params.refresh_token || ''
+            })
+
+            if (error) {
+              console.error("DEBUG: setSession error:", error.message)
+            } else if (data.session) {
+              console.warn("DEBUG: Session set! User:", data.session.user.email)
+              // Aggiorna lo stato utente
+              setUtenteLoggato(data.session.user as unknown as Utente)
+            }
+
+            // Pulisci URL DOPO
+            window.history.replaceState(null, '', window.location.pathname)
+          }
+        }
       }
+
+      // Esegui subito
+      processOAuth()
     }
 
     // Check for Auth Errors in URL (e.g. bad_oauth_state)
     const params = new URLSearchParams(window.location.search)
-    if (params.get('error') === 'bad_oauth_state' || params.get('error_description')?.includes('OAuth state')) {
+
+    // DEBUG: Log all URL params for error diagnosis
+    const errorParam = params.get('error')
+    const errorCodeParam = params.get('error_code')
+    const errorDescParam = params.get('error_description')
+
+    if (errorParam || errorCodeParam || errorDescParam) {
+      console.error('DEBUG: Auth error in URL:', { error: errorParam, error_code: errorCodeParam, error_description: errorDescParam })
+    }
+
+    if (errorParam === 'bad_oauth_state' || errorDescParam?.includes('OAuth state')) {
       setLoginError("Errore sessione (OAuth). Se usi l'app di Telegram, prova ad aprire il sito nel browser esterno (Safari/Chrome).")
+      setMostraPopupLogin(true)
+    } else if (errorParam === 'server_error' || errorDescParam?.includes('Database')) {
+      setLoginError("Errore durante la registrazione. Il problema potrebbe essere: 1) Limite utenti raggiunto, 2) Problema temporaneo del database. Riprova tra qualche minuto.")
       setMostraPopupLogin(true)
     }
 
@@ -224,7 +277,7 @@ export default function ThinkApp() {
     // Theme logic
     const savedTheme = localStorage.getItem('think_theme') as AppTheme | null
     if (savedTheme) setAppTheme(savedTheme)
-    
+
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
     const resolveTheme = (theme: AppTheme) => {
       const dark = theme === 'dark' || (theme === 'system' && prefersDark.matches)
@@ -238,7 +291,7 @@ export default function ThinkApp() {
       }
     }
     resolveTheme(savedTheme || 'system')
-    
+
     const mediaListener = (e: MediaQueryListEvent) => {
       const current = localStorage.getItem('think_theme') as AppTheme | null
       if (!current || current === 'system') {
@@ -297,7 +350,7 @@ export default function ThinkApp() {
 
     const { data: myReplies } = await supabase.from('risposte').select('chat_id, created_at').eq('user_id', utenteLoggato.id).order('created_at', { ascending: false }).limit(200)
     const uniqueChatIds = Array.from(new Set((myReplies || []).map(r => r.chat_id))).slice(0, 30)
-    
+
     if (uniqueChatIds.length > 0) {
       const { data: repliedChats } = await supabase.from('chats').select('*').in('id', uniqueChatIds)
       if (repliedChats) {
@@ -340,7 +393,7 @@ export default function ThinkApp() {
   async function syncProfile() {
     if (!utenteLoggato) return
     console.log("DEBUG: syncProfile started for", utenteLoggato.id)
-    
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -361,26 +414,37 @@ export default function ThinkApp() {
         return
       }
 
-      if (data?.nickname) {
+      // Verifica se il nickname è presente e non vuoto
+      if (data && data.nickname && data.nickname.trim() !== '') {
         console.log("DEBUG: Profile found, nickname is:", data.nickname)
         setMioNickname(data.nickname)
         localStorage.setItem('think_nickname', data.nickname)
         setMostraPopupNicknameObbligatorio(false)
       } else {
+        // Profile esiste ma senza nickname - mostra il popup
         console.log("DEBUG: Profile exists but has no nickname. Triggering mandatory modal.")
         setMostraPopupNicknameObbligatorio(true)
+        setMostraPopupBenvenuto(false)
+        setMostraPopupLogin(false)
       }
     } catch (err) {
       console.error("DEBUG: Exception in syncProfile:", err)
+      // In caso di errore, mostra comunque il popup per sicurezza
+      setMostraPopupNicknameObbligatorio(true)
+      setMostraPopupBenvenuto(false)
+      setMostraPopupLogin(false)
     }
   }
 
   async function handleCompleteProfile(chosenNick: string): Promise<{ error: any }> {
     if (!utenteLoggato) return { error: new Error("Utente non loggato") }
-    const { error } = await supabase.from('profiles').insert([{ 
-      id: utenteLoggato.id, 
-      nickname: chosenNick 
-    }])
+
+    // Usa upsert per gestire sia nuovi profili che profili già creati da trigger
+    const { error } = await supabase.from('profiles').upsert([{
+      id: utenteLoggato.id,
+      nickname: chosenNick
+    }]).select()
+
     if (!error) {
       setMioNickname(chosenNick)
       localStorage.setItem('think_nickname', chosenNick)
@@ -431,7 +495,7 @@ export default function ThinkApp() {
       lng: mieCoord.lng,
       regione: mieCoord.regione,
       risposte_count: 0,
-      autore: utenteLoggato ? utenteLoggato.email.split('@')[0] : mioNickname,
+      autore: utenteLoggato ? (mioNickname || 'Anonimo') : mioNickname,
       user_id: utenteLoggato ? utenteLoggato.id : null,
       ultima_attivita: new Date().toISOString()
     }])
@@ -461,7 +525,7 @@ export default function ThinkApp() {
     await supabase.from('risposte').insert([{
       testo: nuovaRisposta,
       chat_id: chatAttiva.id,
-      autore: utenteLoggato ? utenteLoggato.email.split('@')[0] : mioNickname,
+      autore: utenteLoggato ? (mioNickname || 'Anonimo') : mioNickname,
       user_id: utenteLoggato ? utenteLoggato.id : null
     }])
 
@@ -505,10 +569,10 @@ export default function ThinkApp() {
     // Fallback on origin guarantees that the PWA resumes at the EXACT path it left off
     // Cache-busting for redirect to avoid Cloudflare/Browser issues
     const ts = Date.now()
-    const redirectTo = window.location.hostname === 'thethink.space' 
-      ? `https://thethink.space/?v=${ts}` 
+    const redirectTo = window.location.hostname === 'thethink.space'
+      ? `https://thethink.space/?v=${ts}`
       : `${window.location.origin}/?v=${ts}`
-    
+
     // Assicuriamoci che non ci siano frammenti residui nel redirectTo
     const cleanRedirectTo = redirectTo.split('#')[0]
 
@@ -547,15 +611,15 @@ export default function ThinkApp() {
   // Views Renderers
   const getChatsFiltrate = () => {
     let f = [...chats].filter(c => c.lat !== null)
-    
+
     if (filtroAttivo === 'Archivio') {
       f = f.filter(c => calcolaStatoVitale(c) === 'archivio')
     } else {
       f = f.filter(c => calcolaStatoVitale(c) !== 'archivio')
     }
-    
+
     if (testoRicerca) f = f.filter(c => c.titolo.toLowerCase().includes(testoRicerca.toLowerCase()) || c.autore.toLowerCase().includes(testoRicerca.toLowerCase()))
-    
+
     if (filtroAttivo === 'Tendenze') f.sort((a, b) => (b.risposte_count || 0) - (a.risposte_count || 0))
     return f
   }
@@ -570,24 +634,23 @@ export default function ThinkApp() {
           <h2 className="text-[28px] font-black tracking-tight text-center">Feed</h2>
           <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center">Pensieri dal mondo</p>
         </div>
-        <Input 
-          icon={<Search className="w-4 h-4 text-[var(--color-text-faint)]" />} 
-          placeholder="Cerca pensieri nel mondo..." 
-          value={testoRicerca} 
-          onChange={(e) => setTestoRicerca(e.target.value)} 
+        <Input
+          icon={<Search className="w-4 h-4 text-[var(--color-text-faint)]" />}
+          placeholder="Cerca pensieri nel mondo..."
+          value={testoRicerca}
+          onChange={(e) => setTestoRicerca(e.target.value)}
           className="mb-5 shadow-sm border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] h-12 rounded-2xl"
         />
 
         <div className="flex gap-2 overflow-x-auto pb-4 pt-1 scrollbar-hide" style={{ maskImage: "linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)", WebkitMaskImage: "-webkit-linear-gradient(left, transparent, black 16px, black calc(100% - 16px), transparent)", paddingLeft: '16px', paddingRight: '16px', marginLeft: '-16px', marginRight: '-16px' }}>
           {FILTRI.map((f) => (
-            <button 
-              key={f.id} 
-              onClick={() => setFiltroAttivo(f.id)} 
-              className={`px-5 py-2.5 rounded-full flex items-center justify-center text-[13px] font-bold transition-all whitespace-nowrap border ${
-                filtroAttivo === f.id 
-                ? "bg-[var(--color-brand-blue)] text-white border-transparent shadow-[0_4px_15px_rgba(59,130,246,0.3)]" 
+            <button
+              key={f.id}
+              onClick={() => setFiltroAttivo(f.id)}
+              className={`px-5 py-2.5 rounded-full flex items-center justify-center text-[13px] font-bold transition-all whitespace-nowrap border ${filtroAttivo === f.id
+                ? "bg-[var(--color-brand-blue)] text-white border-transparent shadow-[0_4px_15px_rgba(59,130,246,0.3)]"
                 : "bg-[var(--color-bg-card)] text-[var(--color-text-main)] border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-hover)]"
-              }`}
+                }`}
             >
               {f.icon}
               {f.label}
@@ -626,15 +689,14 @@ export default function ThinkApp() {
           <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-brand-blue)]/10 via-transparent to-[var(--color-brand-cyan)]/5 pointer-events-none" />
           <div className="absolute inset-0 bg-[var(--color-bg-card)] -z-10" />
           <div className="absolute inset-0 border border-[var(--color-border-subtle)] rounded-3xl pointer-events-none" />
-          
+
           <div className="p-6 sm:p-8">
             {/* Top bar: stato + azioni */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${
-                  ['seme', 'germoglio', 'albero'].includes(stato) ? 'bg-emerald-400 animate-pulse' :
+                <div className={`w-2 h-2 rounded-full ${['seme', 'germoglio', 'albero'].includes(stato) ? 'bg-emerald-400 animate-pulse' :
                   stato === 'foglia_secca' ? 'bg-amber-400' : 'bg-zinc-500'
-                }`} />
+                  }`} />
                 <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-faint)]">
                   {['seme', 'germoglio', 'albero'].includes(stato) ? 'Attivo' : stato === 'foglia_secca' ? 'In declino' : 'Archivio'}
                 </span>
@@ -656,11 +718,10 @@ export default function ThinkApp() {
                 <button
                   type="button"
                   onClick={() => toggleBookmark(chatAttiva)}
-                  className={`p-2 rounded-xl transition-colors ${
-                    bookmarks.some(b => b.chat?.id === chatAttiva.id)
-                      ? "text-[var(--color-brand-amber)] bg-[var(--color-brand-amber-dim)]"
-                      : "text-[var(--color-text-faint)] hover:bg-[var(--color-bg-hover)]"
-                  }`}
+                  className={`p-2 rounded-xl transition-colors ${bookmarks.some(b => b.chat?.id === chatAttiva.id)
+                    ? "text-[var(--color-brand-amber)] bg-[var(--color-brand-amber-dim)]"
+                    : "text-[var(--color-text-faint)] hover:bg-[var(--color-bg-hover)]"
+                    }`}
                   title="Salva"
                 >
                   <Bookmark className="w-4 h-4" fill={bookmarks.some(b => b.chat?.id === chatAttiva.id) ? "currentColor" : "none"} />
@@ -697,7 +758,7 @@ export default function ThinkApp() {
             <MessageSquare className="w-3.5 h-3.5" />
             Sviluppi
           </h3>
-          
+
           {risposte.length === 0 ? (
             <div className="text-center py-12 px-6">
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[var(--color-bg-hover)] flex items-center justify-center">
@@ -720,7 +781,7 @@ export default function ThinkApp() {
                     </div>
                     <div className="w-px flex-1 bg-[var(--color-border-subtle)] mt-1.5 opacity-50" />
                   </div>
-                  
+
                   {/* Content */}
                   <div className="flex-1 pb-4">
                     <div className="flex items-center gap-2 mb-1.5">
@@ -804,7 +865,7 @@ export default function ThinkApp() {
         </h1>
         <div className="flex items-center gap-2 pointer-events-auto">
           <span className="text-[12px] font-bold text-[var(--color-text-muted)] tracking-wide">
-            {utenteLoggato ? utenteLoggato.email.split('@')[0] : mioNickname}
+            {mioNickname || 'Anonimo'}
           </span>
           {!utenteLoggato && (
             <button
@@ -819,22 +880,22 @@ export default function ThinkApp() {
         </div>
       </div>
 
-      <MapGlobe 
-        countries={countries} 
-        chats={chatsFiltrate} 
-        sidebarOpen={sidebarOpen} 
-        isDark={isDark} 
-        gpsSimulato={gpsSimulato} 
-        cittaTest={CITTA_TEST} 
-        setGpsSimulato={setGpsSimulato} 
+      <MapGlobe
+        countries={countries}
+        chats={chatsFiltrate}
+        sidebarOpen={sidebarOpen}
+        isDark={isDark}
+        gpsSimulato={gpsSimulato}
+        cittaTest={CITTA_TEST}
+        setGpsSimulato={setGpsSimulato}
         onMarkerClick={apriChat}
       />
 
       {/* DESKTOP SIDEBAR */}
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        isDark={isDark} 
-        onToggleOpen={() => setSidebarOpen(!sidebarOpen)} 
+      <Sidebar
+        isOpen={sidebarOpen}
+        isDark={isDark}
+        onToggleOpen={() => setSidebarOpen(!sidebarOpen)}
         onToggleTheme={() => handleSetAppTheme(isDark ? 'light' : 'dark')}
         onLogoClick={() => {
           setMode("feed")
@@ -849,16 +910,16 @@ export default function ThinkApp() {
             </div>
           ) : (
             <div className="flex relative items-center gap-2">
-              <Input 
-                placeholder="Invia una risposta nell'etere..." 
-                value={nuovaRisposta} 
-                onChange={(e) => setNuovaRisposta(e.target.value)} 
-                onKeyDown={(e) => e.key === 'Enter' && inviaRisposta()} 
+              <Input
+                placeholder="Invia una risposta nell'etere..."
+                value={nuovaRisposta}
+                onChange={(e) => setNuovaRisposta(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && inviaRisposta()}
                 className="pr-14"
               />
-              <Button 
+              <Button
                 onClick={inviaRisposta}
-                size="icon" 
+                size="icon"
                 className="absolute right-1 top-1 bottom-1 w-11 h-11 rounded-xl shadow-lg m-0 flex items-center justify-center"
               >
                 <Send className="w-4 h-4" />
@@ -879,7 +940,7 @@ export default function ThinkApp() {
               <Pencil className="w-3.5 h-3.5" />
             </button>
             <span className="font-bold text-[14px]">
-              {utenteLoggato ? utenteLoggato.email.split('@')[0] : mioNickname}
+              {mioNickname || 'Anonimo'}
             </span>
           </div>
 
@@ -904,11 +965,10 @@ export default function ThinkApp() {
                     key={tab.id}
                     type="button"
                     onClick={() => { setMode(tab.id as Mode); setChatAttiva(null) }}
-                    className={`relative z-10 flex-1 py-2 text-[13px] font-bold rounded-xl transition-colors duration-300 ${
-                      mode === tab.id
-                        ? "text-[var(--color-text-main)]"
-                        : "text-[var(--color-text-faint)] hover:text-[var(--color-text-muted)]"
-                    }`}
+                    className={`relative z-10 flex-1 py-2 text-[13px] font-bold rounded-xl transition-colors duration-300 ${mode === tab.id
+                      ? "text-[var(--color-text-main)]"
+                      : "text-[var(--color-text-faint)] hover:text-[var(--color-text-muted)]"
+                      }`}
                   >
                     {tab.label}
                   </button>
@@ -922,7 +982,7 @@ export default function ThinkApp() {
             <div className="sticky top-0 z-[60] bg-[var(--color-bg-base)]/90 backdrop-blur-xl pt-2 pb-4 -mx-7 px-7 mb-4 border-b border-[var(--color-border-subtle)]">
               <Button variant="ghost" className="-ml-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors" onClick={() => { chiudiChat(); setMode("feed") }}>
                 <span className="flex items-center gap-2 text-[14px] font-bold">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                   Torna al Feed
                 </span>
               </Button>
@@ -932,16 +992,16 @@ export default function ThinkApp() {
           {mode === "feed" && renderFeedContent()}
           {mode === "chat" && renderChatContent()}
           {mode === "account" && (
-            <AccountView 
-              utenteLoggato={utenteLoggato} 
-              mioNickname={mioNickname} 
-              setMioNickname={setMioNickname} 
+            <AccountView
+              utenteLoggato={utenteLoggato}
+              mioNickname={mioNickname}
+              setMioNickname={setMioNickname}
               onSaveNickname={handleSaveNickname}
-              nicknameErrorMessage={nicknameErrorMessage} 
-              accountLoading={accountLoading} 
+              nicknameErrorMessage={nicknameErrorMessage}
+              accountLoading={accountLoading}
               appTheme={appTheme}
               setAppTheme={handleSetAppTheme}
-              logout={logout} 
+              logout={logout}
             />
           )}
           {mode === "activity" && (
@@ -958,15 +1018,15 @@ export default function ThinkApp() {
       </Sidebar>
 
       {/* MOBILE BOTTOM NAVIGATION */}
-      <BottomNavigation 
-        activeTab={activeTab} 
-        onTabChange={handleTabChange} 
-        onCompose={() => setMostraModaleComponi(true)} 
+      <BottomNavigation
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onCompose={() => setMostraModaleComponi(true)}
       />
 
       {/* MOBILE SHEET PANELS */}
-      <MobileSheet 
-        isOpen={mobileSheetOpen} 
+      <MobileSheet
+        isOpen={mobileSheetOpen}
         onClose={() => {
           setMobileSheetOpen(false)
           setActiveTab("home")
@@ -974,17 +1034,17 @@ export default function ThinkApp() {
         initialPosition="partial"
         footer={mode === "chat" ? (
           <div className="flex relative items-center gap-2">
-            <Input 
+            <Input
               inputMode="text"
-              placeholder="Rispondi..." 
-              value={nuovaRisposta} 
-              onChange={(e) => setNuovaRisposta(e.target.value)} 
-              onKeyDown={(e) => e.key === 'Enter' && inviaRisposta()} 
+              placeholder="Rispondi..."
+              value={nuovaRisposta}
+              onChange={(e) => setNuovaRisposta(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && inviaRisposta()}
               className="pr-14"
             />
-            <Button 
+            <Button
               onClick={inviaRisposta}
-              size="icon" 
+              size="icon"
               className="absolute right-1 top-1 bottom-1 w-11 h-11 rounded-xl m-0 flex items-center justify-center bg-[var(--color-brand-blue)] text-white"
             >
               <Send className="w-4 h-4 ml-0.5" />
@@ -996,16 +1056,16 @@ export default function ThinkApp() {
           {mode === "feed" && renderFeedContent()}
           {mode === "chat" && renderChatContent()}
           {mode === "account" && (
-            <AccountView 
-              utenteLoggato={utenteLoggato} 
-              mioNickname={mioNickname} 
-              setMioNickname={setMioNickname} 
+            <AccountView
+              utenteLoggato={utenteLoggato}
+              mioNickname={mioNickname}
+              setMioNickname={setMioNickname}
               onSaveNickname={handleSaveNickname}
-              nicknameErrorMessage={nicknameErrorMessage} 
-              accountLoading={accountLoading} 
+              nicknameErrorMessage={nicknameErrorMessage}
+              accountLoading={accountLoading}
               appTheme={appTheme}
               setAppTheme={handleSetAppTheme}
-              logout={logout} 
+              logout={logout}
             />
           )}
           {mode === "activity" && (
@@ -1031,28 +1091,28 @@ export default function ThinkApp() {
         nickname={mioNickname}
       />
 
-      <ModalsContainer 
-        mostraModaleComponi={mostraModaleComponi} 
-        setMostraModaleComponi={setMostraModaleComponi} 
-        nuovoMessaggio={nuovoMessaggio} 
-        setNuovoMessaggio={setNuovoMessaggio} 
-        creaChat={creaChat} 
-        cittaSimulata={CITTA_TEST.find(c => c.id === gpsSimulato)?.nome || ''} 
-        mostraPopupBenvenuto={mostraPopupBenvenuto} 
+      <ModalsContainer
+        mostraModaleComponi={mostraModaleComponi}
+        setMostraModaleComponi={setMostraModaleComponi}
+        nuovoMessaggio={nuovoMessaggio}
+        setNuovoMessaggio={setNuovoMessaggio}
+        creaChat={creaChat}
+        cittaSimulata={CITTA_TEST.find(c => c.id === gpsSimulato)?.nome || ''}
+        mostraPopupBenvenuto={mostraPopupBenvenuto}
         setMostraPopupBenvenuto={setMostraPopupBenvenuto}
-        utenteLoggato={utenteLoggato} 
-        mioNickname={mioNickname} 
-        setMioNickname={setMioNickname} 
-        salvaNicknameSoloLocale={salvaNicknameSoloLocale} 
-        mostraPopupLogin={mostraPopupLogin} 
-        setMostraPopupLogin={setMostraPopupLogin} 
-        loginSent={loginSent} 
-        loginLoading={loginLoading} 
-        accediConGoogle={accediConGoogle} 
-        emailLogin={emailLogin} 
-        setEmailLogin={setEmailLogin} 
-        inviaMagicLink={inviaMagicLink} 
-        loginError={loginError} 
+        utenteLoggato={utenteLoggato}
+        mioNickname={mioNickname}
+        setMioNickname={setMioNickname}
+        salvaNicknameSoloLocale={salvaNicknameSoloLocale}
+        mostraPopupLogin={mostraPopupLogin}
+        setMostraPopupLogin={setMostraPopupLogin}
+        loginSent={loginSent}
+        loginLoading={loginLoading}
+        accediConGoogle={accediConGoogle}
+        emailLogin={emailLogin}
+        setEmailLogin={setEmailLogin}
+        inviaMagicLink={inviaMagicLink}
+        loginError={loginError}
         mostraPopupNicknameObbligatorio={mostraPopupNicknameObbligatorio}
         onCompleteProfile={handleCompleteProfile}
         nicknameErrorMessage={nicknameErrorMessage}
