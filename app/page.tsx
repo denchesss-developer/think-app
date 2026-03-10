@@ -104,44 +104,41 @@ export default function ThinkApp() {
 
   // Backend Calls
   async function fetchChats() {
-    const mieCoord = await ottieniCoordinate()
-    
-    // 1. Chats vicine (feed normale, tendenze, recenti)
-    const localRes = supabase.rpc('chats_in_view', {
-      lat_in: mieCoord.lat,
-      lng_in: mieCoord.lng,
-      radius_km: 500
-    })
-    
-    // 2. Archiviati globali
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    const archRes = supabase.from('chats').select('*, risposte(count)').lt('created_at', twentyFourHoursAgo).order('created_at', { ascending: false }).limit(50)
-
-    const [localData, archData] = await Promise.all([localRes, archRes])
-
-    const merged = new Map<number, Chat>()
-    
-    if (localData.data) {
-      localData.data.forEach((c: Chat) => merged.set(c.id, c))
-    }
-    
-    if (archData.data) {
-      const arch = archData.data.map((c: Chat & { risposte?: { count: number }[] }) => ({
-        ...c,
-        risposte_count: c.risposte?.[0]?.count || 0
-      })) as Chat[]
+    try {
+      const mieCoord = await ottieniCoordinate()
       
-      arch.forEach(c => {
-        if (calcolaStatoVitale(c) === 'archivio') {
-          merged.set(c.id, c)
-        }
+      // 1. Chats vicine
+      const localRes = await supabase.rpc('chats_in_view', {
+        lat_in: mieCoord.lat,
+        lng_in: mieCoord.lng,
+        radius_km: 500
       })
-    }
-    
-    const chatOrdinate = Array.from(merged.values())
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       
-    setChats(chatOrdinate)
+      // 2. Archiviati globali (rimuoviamo risposte(count) per evitare errori 400 se restrizioni schema attive)
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      const archRes = await supabase.from('chats').select('*').lt('created_at', twentyFourHoursAgo).order('created_at', { ascending: false }).limit(50)
+
+      const merged = new Map<number, Chat>()
+      
+      if (localRes.data) {
+        localRes.data.forEach((c: Chat) => merged.set(c.id, c))
+      }
+      
+      if (archRes.data) {
+        archRes.data.forEach((c: Chat) => {
+          if (calcolaStatoVitale(c) === 'archivio') {
+            merged.set(c.id, c)
+          }
+        })
+      }
+      
+      const chatOrdinate = Array.from(merged.values())
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        
+      setChats(chatOrdinate)
+    } catch (err) {
+      console.error("DEBUG: fetchChats error:", err)
+    }
   }
 
   async function ottieniCoordinate() {
@@ -159,7 +156,7 @@ export default function ThinkApp() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchChats().catch(e => console.error("DEBUG: fetchChats failed early:", e))
 
-    // Nickname logic
+    // NICKNAME LOGIC
     let nickLocale = localStorage.getItem('think_nickname')
     if (!nickLocale) {
       nickLocale = `${ANIMALI[Math.floor(Math.random() * ANIMALI.length)]}_${AGGETTIVI[Math.floor(Math.random() * AGGETTIVI.length)]}_${Math.floor(Math.random() * 100)}`
@@ -167,6 +164,12 @@ export default function ThinkApp() {
       setMostraPopupBenvenuto(true)
     }
     setMioNickname(nickLocale)
+
+    // ALERT DIAGNOSTICO IMMEDIATO
+    if (typeof window !== 'undefined') {
+      console.warn("DEBUG: App version starting... (Alert check)")
+      // alert("APP START: Versione con Nickname Obbligatorio ATTIVA!")
+    }
 
     // Check for Auth Errors in URL (e.g. bad_oauth_state)
     const params = new URLSearchParams(window.location.search)
@@ -582,6 +585,9 @@ export default function ThinkApp() {
         </div>
       </div>
 
+      <div className="bg-yellow-500/10 border border-yellow-500/20 p-2 text-[10px] font-black text-yellow-500 text-center mb-4 rounded-xl uppercase tracking-tighter">
+        DEBUG MODE v3 - Se vedi questo, l'app è aggiornata
+      </div>
       <div className="mt-4">
         {chatsFiltrate.map(chat => <ChatCard key={chat.id} chat={chat} onClick={apriChat} />)}
       </div>
