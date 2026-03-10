@@ -219,10 +219,6 @@ export default function ThinkApp() {
         // Pulisci URL
         window.history.replaceState(null, '', window.location.pathname)
       }
-      
-      // Esegui
-      processOAuth()
-    }
       processOAuth()
     }
 
