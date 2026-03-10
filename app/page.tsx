@@ -169,8 +169,16 @@ export default function ThinkApp() {
     setMioNickname(nickLocale)
 
     // Auth
-    supabase.auth.getSession().then(({ data: { session } }) => setUtenteLoggato((session?.user as unknown as Utente) ?? null))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setUtenteLoggato((session?.user as unknown as Utente) ?? null))
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user as unknown as Utente | null
+      setUtenteLoggato(user)
+      if (user) setMostraPopupLogin(false)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user as unknown as Utente | null
+      setUtenteLoggato(user)
+      if (user) setMostraPopupLogin(false)
+    })
 
     // Realtime Subscriptions
     const chatsChannel = supabase
@@ -274,14 +282,19 @@ export default function ThinkApp() {
 
 
   useEffect(() => {
-    if (mode !== "account") return
-    if (!utenteLoggato) return
+    if (mode !== "account" || !utenteLoggato) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAccountData()
-    // Sincronizza profilo/nickname se loggato
-    syncProfile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, utenteLoggato])
+
+  // Sincronizza profilo/nickname se loggato (sempre, non solo in account)
+  useEffect(() => {
+    if (utenteLoggato) {
+      syncProfile()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [utenteLoggato])
 
   async function syncProfile() {
     if (!utenteLoggato) return
@@ -431,7 +444,7 @@ export default function ThinkApp() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.href,
+        redirectTo: window.location.origin,
         queryParams: { prompt: 'select_account' }
       }
     })
