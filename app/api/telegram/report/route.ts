@@ -97,6 +97,46 @@ export async function GET(req: Request) {
     const engagementNow = chatsPeriodo > 0 ? (rispPeriodo / chatsPeriodo).toFixed(1) : '0';
     const engagementPrev = chatsPrev > 0 ? (rispPrev / chatsPrev).toFixed(1) : '0';
 
+    // 7. REGIONE PIÙ ATTIVA nel periodo
+    const { data: regionData } = await supabaseAdmin
+      .from('chats')
+      .select('regione')
+      .gte('created_at', startIso);
+    let regioneTop = '—';
+    if (regionData && regionData.length > 0) {
+      const regionCount: Record<string, number> = {};
+      regionData.forEach(r => {
+        if (r.regione) regionCount[r.regione] = (regionCount[r.regione] || 0) + 1;
+      });
+      regioneTop = Object.entries(regionCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+    }
+
+    // 8. ORA DI PUNTA (analisi su risposte + chats nel periodo)
+    const { data: orePosts } = await supabaseAdmin
+      .from('risposte')
+      .select('created_at')
+      .gte('created_at', startIso);
+    let oraPunta = '—';
+    if (orePosts && orePosts.length > 0) {
+      const oreCount: Record<number, number> = {};
+      orePosts.forEach(r => {
+        const h = new Date(r.created_at).getHours();
+        oreCount[h] = (oreCount[h] || 0) + 1;
+      });
+      const topHour = Number(Object.entries(oreCount).sort((a, b) => b[1] - a[1])[0]?.[0]);
+      oraPunta = `${topHour}:00 – ${topHour + 1}:00`;
+    }
+
+    // 9. PENSIERO PIÙ VIVO (chat con più risposte nel periodo)
+    const { data: topChat } = await supabaseAdmin
+      .from('chats')
+      .select('titolo, risposte_count')
+      .gte('created_at', startIso)
+      .order('risposte_count', { ascending: false })
+      .limit(1)
+      .single();
+    const pensieroMVP = topChat ? `"${topChat.titolo.slice(0, 60)}${topChat.titolo.length > 60 ? '...' : ''}" (${topChat.risposte_count || 0} risposte)` : '—';
+
     // Calcolo Percentuali
     const calcVar = (curr: number, prev: number) => {
       if (prev === 0) return curr > 0 ? '+100%' : '0%';
@@ -139,7 +179,13 @@ export async function GET(req: Request) {
     msg += `↳ <i>Interesse generale:</i> <b>${varBook}</b>\n\n`;
 
     msg += `🚩 <b>SEGNALAZIONI RICEVUTE:</b> ${segnPeriodo}\n`;
-    msg += `↳ <i>Variazione segnalazioni:</i> <b>${varSegn}</b>\n`;
+    msg += `↳ <i>Variazione segnalazioni:</i> <b>${varSegn}</b>\n\n`;
+
+    msg += `🌍 <b>REGIONE PIÙ ATTIVA:</b> ${regioneTop}\n\n`;
+
+    msg += `🌙 <b>ORA DI PUNTA:</b> ${oraPunta} (fascia oraria più vivace)\n\n`;
+
+    msg += `🏆 <b>PENSIERO MVP:</b>\n<i>${pensieroMVP}</i>\n`;
   
     msg += `\n<i>Continuiamo a spingere su questa rotta! 🚀</i>`;
 
