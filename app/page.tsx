@@ -200,10 +200,20 @@ export default function ThinkApp() {
     })
 
     // Realtime Subscriptions
+    console.warn("DEBUG: Subscribing to realtime chats...")
     const chatsChannel = supabase
-      .channel('public:chats')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => fetchChats())
-      .subscribe()
+      .channel('public:chats_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, (payload) => {
+        console.warn("DEBUG/REALTIME: Chat change detected:", payload.eventType)
+        fetchChats().catch(e => console.error("DEBUG: fetchChats from realtime failed:", e))
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'risposte' }, (payload) => {
+        console.warn("DEBUG/REALTIME: New answer detected, refreshing chats...")
+        fetchChats().catch(e => console.error("DEBUG: fetchChats from realtime (risposte) failed:", e))
+      })
+      .subscribe((status) => {
+        console.warn("DEBUG/REALTIME: Subscription status:", status)
+      })
 
     // Theme logic
     const savedTheme = localStorage.getItem('think_theme') as AppTheme | null
