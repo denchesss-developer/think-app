@@ -164,7 +164,7 @@ export function MapGlobe({
         pathPoints={(d: any) => d}
         pathPointLat={(p: any) => p[0]}
         pathPointLng={(p: any) => p[1]}
-        pathColor={() => isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.08)'} // Colore sottilissimo come nel design nativo scuro
+        pathColor={() => isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.15)'} // Griglia chiara notevolmente più scura e definita (slate-900 15%)
         pathDashLength={0}
         pathResolution={2} // Altissima risoluzione di curva
         pathStroke={0.5} // Linea morbidissima e sottile

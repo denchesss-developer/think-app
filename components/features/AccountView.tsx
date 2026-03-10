@@ -157,7 +157,7 @@ export function AccountView({
             <div className="space-y-2">
               <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)]">
                 <span className="font-bold text-[14px]">Lingua App</span>
-                <select className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer">
+                <select className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right">
                   <option value="it" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Italiano</option>
                   <option value="en" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">English</option>
                 </select>
@@ -167,7 +167,7 @@ export function AccountView({
                 <select 
                   value={appTheme} 
                   onChange={(e) => setAppTheme(e.target.value as AppTheme)}
-                  className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer text-right"
+                  className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right"
                 >
                   <option value="system" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Sistema</option>
                   <option value="light" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Chiaro</option>
@@ -177,6 +177,18 @@ export function AccountView({
               <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] opacity-50 cursor-not-allowed">
                 <span className="font-bold text-[14px]">Notifiche Push</span>
                 <span className="text-[11px] uppercase tracking-widest font-bold text-[var(--color-brand-amber)]">Presto</span>
+              </div>
+              
+              {/* Sezione Feedback / Segnalazioni in fondo ai Settings */}
+              <div className="pt-4 flex justify-center">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] font-semibold text-xs"
+                  onClick={() => window.location.href = "mailto:support@thinkapp.com?subject=Segnalazione%20Bug%20o%20Suggerimento"}
+                >
+                  Segnala un bug o dai un consiglio 💡
+                </Button>
               </div>
             </div>
           </div>
