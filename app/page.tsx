@@ -168,6 +168,13 @@ export default function ThinkApp() {
     }
     setMioNickname(nickLocale)
 
+    // Check for Auth Errors in URL (e.g. bad_oauth_state)
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('error') === 'bad_oauth_state' || params.get('error_description')?.includes('OAuth state')) {
+      setLoginError("Errore sessione (OAuth). Se usi l'app di Telegram, prova ad aprire il sito nel browser esterno (Safari/Chrome).")
+      setMostraPopupLogin(true)
+    }
+
     // Auth
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user as unknown as Utente | null
@@ -441,10 +448,15 @@ export default function ThinkApp() {
     setLoginLoading(true)
     setLoginError('')
     // Fallback on origin guarantees that the PWA resumes at the EXACT path it left off
+    // In production, we force the redirect to the main domain to avoid OAuth state mismatches
+    const redirectTo = window.location.hostname === 'thethink.space' 
+      ? 'https://thethink.space' 
+      : window.location.origin
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo,
         queryParams: { prompt: 'select_account' }
       }
     })
