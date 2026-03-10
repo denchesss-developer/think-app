@@ -118,6 +118,28 @@ export function MapGlobe({
     return el
   }
 
+  // Generazione Manuale Graticola in stile "nativo" (step a 10 gradi)
+  const GRATICULE_STEP = 10;
+  const graticuleLines = [];
+  
+  // Paralleli
+  for (let lat = -90; lat <= 90; lat += GRATICULE_STEP) {
+    const coords = [];
+    for (let lng = -180; lng <= 180; lng += 2.5) { // Risoluzione più alta per sfericità perfetta
+      coords.push([lat, lng]);
+    }
+    graticuleLines.push(coords);
+  }
+  
+  // Meridiani
+  for (let lng = -180; lng <= 180; lng += GRATICULE_STEP) {
+    const coords = [];
+    for (let lat = -90; lat <= 90; lat += 2.5) {
+      coords.push([lat, lng]);
+    }
+    graticuleLines.push(coords);
+  }
+
   return (
     <div className={`absolute top-0 bottom-0 right-0 transition-[left] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center ${sidebarOpen ? "lg:left-[420px]" : "left-0"} max-lg:left-0`}>
       <Globe
@@ -126,20 +148,26 @@ export function MapGlobe({
         showGlobe={true}
         globeMaterial={
           new THREE.MeshBasicMaterial({ 
-            // Theme oscuro: nero pieno. Theme chiaro: lo facciamo "bucato" o color ghiaccio 
-            // La griglia nativa è scura di natura, serve trasparenza o base bianca immacolata per vederla.
-            color: isDark ? '#141416' : '#ffffff',
-            transparent: true,
-            opacity: isDark ? 1 : 0.8
+            color: isDark ? '#141416' : '#f4f4f5',
           })
         }
         showAtmosphere={false}
-        showGraticules={true}
+        showGraticules={false} // Usiamo esclusivamente quella custom per entrambi per avere 100% simmetria di design
         polygonsData={countries.features}
         polygonCapColor={() => isDark ? '#27272a' : '#dfe1e5'}
         polygonSideColor={() => 'rgba(0,0,0,0)'}
         polygonStrokeColor={() => isDark ? '#52525b' : '#a1a1aa'} // Confini nazioni
         polygonAltitude={0.01}
+        
+        // Graticola Geografica Custom fedele al preset nativo nero
+        pathsData={graticuleLines}
+        pathPoints={(d: any) => d}
+        pathPointLat={(p: any) => p[0]}
+        pathPointLng={(p: any) => p[1]}
+        pathColor={() => isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.08)'} // Colore sottilissimo come nel design nativo scuro
+        pathDashLength={0}
+        pathResolution={2} // Altissima risoluzione di curva
+        pathStroke={0.5} // Linea morbidissima e sottile
 
         htmlElementsData={chats} 
         htmlLat="lat" 
