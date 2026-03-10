@@ -157,7 +157,7 @@ export default function ThinkApp() {
       .then(res => res.json()).then(setCountries)
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchChats()
+    fetchChats().catch(e => console.error("DEBUG: fetchChats failed early:", e))
 
     // Nickname logic
     let nickLocale = localStorage.getItem('think_nickname')
@@ -176,16 +176,22 @@ export default function ThinkApp() {
     }
 
     // Auth
-    console.log("DEBUG: Auth initialization started")
+    console.warn("DEBUG/ALERT: Auth initialization started")
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user as unknown as Utente | null
-      console.log("DEBUG: getSession user:", user?.id || "not logged in")
-      setUtenteLoggato(user)
-      if (user) setMostraPopupLogin(false)
-    })
+      console.warn("DEBUG/ALERT: getSession user:", user?.id || "not logged in")
+      if (user) {
+        // alert("DEBUG: Login rilevato per " + user.email)
+        setUtenteLoggato(user)
+        setMostraPopupLogin(false)
+      } else {
+        setUtenteLoggato(null)
+      }
+    }).catch(e => console.error("DEBUG: getSession exception:", e))
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const user = session?.user as unknown as Utente | null
-      console.log("DEBUG: onAuthStateChange event:", _event, "user:", user?.id || "null")
+      console.warn("DEBUG/ALERT: onAuthStateChange event:", _event, "user:", user?.id || "null")
       setUtenteLoggato(user)
       if (user) setMostraPopupLogin(false)
     })
@@ -300,8 +306,9 @@ export default function ThinkApp() {
 
   // Sincronizza profilo/nickname se loggato (sempre, non solo in account)
   useEffect(() => {
-    console.log("DEBUG: utenteLoggato changed:", utenteLoggato?.id || "null")
+    console.warn("DEBUG/ALERT: utenteLoggato state changed to:", utenteLoggato?.id || "null")
     if (utenteLoggato) {
+      console.warn("DEBUG/ALERT: Triggering syncProfile...")
       syncProfile()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
