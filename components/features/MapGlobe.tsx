@@ -155,9 +155,9 @@ export function MapGlobe({
         showGraticules={false} // Usiamo esclusivamente quella custom per entrambi per avere 100% simmetria di design
         polygonsData={countries.features}
         polygonCapColor={() => isDark ? '#27272a' : '#dfe1e5'}
-        polygonSideColor={() => 'rgba(0,0,0,0)'}
+        polygonSideColor={() => isDark ? '#1e1e20' : '#d2d4d9'} // Colore laterale per creare ombra 3D
         polygonStrokeColor={() => isDark ? '#52525b' : '#a1a1aa'} // Confini nazioni
-        polygonAltitude={0.01}
+        polygonAltitude={0.025}
         
         // Graticola Geografica Custom fedele al preset nativo nero
         pathsData={graticuleLines}
