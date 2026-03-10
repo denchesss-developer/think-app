@@ -362,9 +362,10 @@ export default function ThinkApp() {
   async function accediConGoogle() {
     setLoginLoading(true)
     setLoginError('')
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin }
+      options: { redirectTo: siteUrl }
     })
     if (error) {
       setLoginError(error.message)
