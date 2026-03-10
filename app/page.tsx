@@ -176,13 +176,16 @@ export default function ThinkApp() {
     }
 
     // Auth
+    console.log("DEBUG: Auth initialization started")
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user as unknown as Utente | null
+      console.log("DEBUG: getSession user:", user?.id || "not logged in")
       setUtenteLoggato(user)
       if (user) setMostraPopupLogin(false)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const user = session?.user as unknown as Utente | null
+      console.log("DEBUG: onAuthStateChange event:", _event, "user:", user?.id || "null")
       setUtenteLoggato(user)
       if (user) setMostraPopupLogin(false)
     })
@@ -297,11 +300,16 @@ export default function ThinkApp() {
 
   // Sincronizza profilo/nickname se loggato (sempre, non solo in account)
   useEffect(() => {
+    console.log("DEBUG: utenteLoggato changed:", utenteLoggato?.id || "null")
     if (utenteLoggato) {
       syncProfile()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [utenteLoggato])
+
+  useEffect(() => {
+    console.log("DEBUG: mostraPopupNicknameObbligatorio changed:", mostraPopupNicknameObbligatorio)
+  }, [mostraPopupNicknameObbligatorio])
 
   async function syncProfile() {
     if (!utenteLoggato) return
