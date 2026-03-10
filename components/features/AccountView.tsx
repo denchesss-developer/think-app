@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
@@ -179,17 +179,8 @@ export function AccountView({
                 <span className="text-[11px] uppercase tracking-widest font-bold text-[var(--color-brand-amber)]">Presto</span>
               </div>
               
-              {/* Sezione Feedback / Segnalazioni in fondo ai Settings */}
-              <div className="pt-4 flex justify-center">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] font-semibold text-xs"
-                  onClick={() => window.location.href = "mailto:support@thinkapp.com?subject=Segnalazione%20Bug%20o%20Suggerimento"}
-                >
-                  Segnala un bug o dai un consiglio 💡
-                </Button>
-              </div>
+              {/* Sezione Feedback / Segnalazioni — Form Inline verso API Telegram */}
+              <FeedbackSection autore={utenteLoggato?.email?.split('@')[0] || 'Anonimo'} />
             </div>
           </div>
         </div>
@@ -204,3 +195,78 @@ export function AccountView({
   )
 }
 
+
+// --------------------------------------------------------------------------
+// Componente: FeedbackSection (Bug & Consigli → API Telegram → Topic N.4)
+// --------------------------------------------------------------------------
+function FeedbackSection({ autore }: { autore: string }) {
+  const [aperto, setAperto] = useState(false)
+  const [tipo, setTipo] = useState<'bug' | 'consiglio'>('consiglio')
+  const [testo, setTesto] = useState('')
+  const [stato, setStato] = useState<'idle' | 'loading' | 'ok' | 'err'>('idle')
+
+  async function invia() {
+    if (!testo.trim()) return
+    setStato('loading')
+    try {
+      const res = await fetch('/api/telegram/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo, testo: testo.trim(), autore })
+      })
+      setStato(res.ok ? 'ok' : 'err')
+      if (res.ok) { setTesto(''); setTimeout(() => { setAperto(false); setStato('idle') }, 2500) }
+    } catch { setStato('err') }
+  }
+
+  return (
+    <div className="pt-4">
+      {!aperto ? (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setAperto(true)}
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] font-semibold text-xs transition-colors py-2 px-4 rounded-xl hover:bg-[var(--color-bg-hover)]"
+          >
+            Segnala un bug o dai un consiglio 💡
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] p-4 space-y-3">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Lasciaci un messaggio</p>
+          <div className="flex gap-2">
+            {(['bug', 'consiglio'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setTipo(t)}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-colors border ${tipo === t ? 'bg-[var(--color-brand-blue)]/10 border-[var(--color-brand-blue)]/40 text-[var(--color-brand-blue)]' : 'border-[var(--color-border-subtle)] text-[var(--color-text-faint)]'}`}
+              >
+                {t === 'bug' ? '🐛 Bug' : '💡 Consiglio'}
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={testo}
+            onChange={e => setTesto(e.target.value)}
+            placeholder={tipo === 'bug' ? 'Descrivi il problema...' : 'La tua idea o suggerimento...'}
+            rows={3}
+            className="w-full bg-[var(--color-bg-panel)] border border-[var(--color-border-subtle)] rounded-xl p-3 text-sm resize-none outline-none focus:border-[var(--color-brand-blue)]/60 text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)]"
+          />
+          {stato === 'ok' && <p className="text-green-500 text-xs font-semibold text-center">✅ Ricevuto, grazie!</p>}
+          {stato === 'err' && <p className="text-red-400 text-xs font-semibold text-center">❌ Errore. Riprova.</p>}
+          <div className="flex gap-2">
+            <button onClick={() => setAperto(false)} className="flex-1 py-2 rounded-xl text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] transition-colors">
+              Annulla
+            </button>
+            <button
+              onClick={invia}
+              disabled={stato === 'loading' || !testo.trim()}
+              className="flex-1 py-2 rounded-xl text-xs font-bold bg-[var(--color-brand-blue)] text-white disabled:opacity-50 transition-opacity"
+            >
+              {stato === 'loading' ? 'Invio...' : 'Invia'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

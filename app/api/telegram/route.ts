@@ -57,6 +57,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         chat_id: CHAT_ID,
+        message_thread_id: process.env.TELEGRAM_THREAD_SEGNALAZIONI,
         text: message,
         parse_mode: 'HTML',
         reply_markup: inlineKeyboard

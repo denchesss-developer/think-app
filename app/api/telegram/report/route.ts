@@ -196,6 +196,7 @@ export async function GET(req: Request) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: CHAT_ID,
+        message_thread_id: process.env.TELEGRAM_THREAD_REPORT,
         text: msg,
         parse_mode: 'HTML',
       }),
