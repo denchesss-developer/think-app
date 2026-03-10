@@ -41,12 +41,11 @@ export function Sidebar({
         <div className="px-7 pt-8 pb-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 cursor-pointer group" onClick={onLogoClick}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] group-hover:bg-[var(--color-bg-hover)] transition-colors">
-                <Sparkles className="w-5 h-5 text-[var(--color-text-main)]" />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-main)]">
-                Think.
-              </h1>
+              <img 
+                src="/logo.svg" 
+                alt="Think" 
+                className="h-14 w-auto dark:invert object-contain transition-transform group-hover:scale-[1.02]"
+              />
             </div>
 
             <div className="flex items-center gap-2">

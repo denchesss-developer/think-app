@@ -3,7 +3,6 @@ import { X, Mail } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { Input, Textarea } from "@/components/ui/Input"
 import { GlassPanel } from "@/components/ui/Glass"
-import { useGoogleLogin, useGoogleOneTapLogin, CredentialResponse } from '@react-oauth/google'
 
 export const GoogleLogo = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -33,7 +32,7 @@ interface ModalsContainerProps {
   setMostraPopupLogin: (v: boolean) => void
   loginSent: boolean
   loginLoading: boolean
-  accediConGoogle: (idToken?: string) => void
+  accediConGoogle: () => void
   emailLogin: string
   setEmailLogin: (v: string) => void
   inviaMagicLink: (e: React.FormEvent) => void
@@ -46,31 +45,6 @@ export function ModalsContainer({
   mostraPopupLogin, setMostraPopupLogin, loginSent, loginLoading, accediConGoogle, emailLogin, setEmailLogin, inviaMagicLink, loginError
 }: ModalsContainerProps) {
   
-  // Attiva Google One Tap popup automatico per user experience nativa PWA (se non ha già rifiutato in passato)
-  useGoogleOneTapLogin({
-    onSuccess: (credentialResponse: CredentialResponse) => {
-      if (credentialResponse.credential) {
-        accediConGoogle(credentialResponse.credential)
-      }
-    },
-    onError: () => {
-      console.log('Google One Tap Failed')
-    },
-    cancel_on_tap_outside: false
-  });
-
-  const customGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      // Dato che l'implicit flow restituisce access_token e non id_token,
-      // per il login nativo col tasto custom richiamiamo il vecchio metodo di Supabase
-      // che si interfaccia benissimo con thethink.space. Oppure carichiamo l'id_token.
-      // E' preferibile passare il controllo al page.tsx per il popup PWA-friendly di Supabase.
-      // Dobbiamo re-inizializzare il popup oauth di Supabase per questo bottone.
-      accediConGoogle()
-    },
-    onError: () => console.log('Login failed'),
-  })
-
   return (
     <>
       <div className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-md transition-opacity duration-300 ${mostraModaleComponi || (mostraPopupBenvenuto && !utenteLoggato) || (mostraPopupLogin && !utenteLoggato) ? "opacity-100" : "opacity-0 pointer-events-none"}`} />
@@ -152,24 +126,16 @@ export function ModalsContainer({
                 Nessuna password da ricordare. Entra e proteggi il tuo nome per sempre.
               </p>
 
-              <div className="flex justify-center w-full mb-4">
-                {loginLoading ? (
-                  <div className="w-full flex items-center justify-center p-4">
-                    <div className="h-6 w-6 rounded-full border-2 border-[var(--color-text-main)] border-t-transparent animate-spin" />
-                  </div>
-                ) : (
-                  <Button
-                    onClick={() => customGoogleLogin()}
-                    disabled={loginLoading}
-                    variant="secondary"
-                    size="lg"
-                    className="w-full gap-3 py-4 text-[15px] hover:bg-[var(--color-bg-hover)]"
-                  >
-                    <div className="bg-white p-1 rounded-sm"><GoogleLogo /></div>
-                    Continua con Google
-                  </Button>
-                )}
-              </div>
+              <Button
+                onClick={accediConGoogle}
+                disabled={loginLoading}
+                variant="secondary"
+                size="lg"
+                className="w-full gap-3 py-4 text-[15px] hover:bg-[var(--color-bg-hover)]"
+              >
+                <div className="bg-white p-1 rounded-sm"><GoogleLogo /></div>
+                Continua con Google
+              </Button>
 
               <div className="flex items-center gap-4 my-8 opacity-60">
                 <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />

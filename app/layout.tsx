@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { GoogleAuthProvider } from "@/components/features/GoogleAuthProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -44,9 +43,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased touch-manipulation`}
       >
-        <GoogleAuthProvider>
-          {children}
-        </GoogleAuthProvider>
+        {children}
         <SpeedInsights />
       </body>
     </html>
