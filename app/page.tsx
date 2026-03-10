@@ -83,6 +83,7 @@ export default function ThinkApp() {
   const [utenteLoggato, setUtenteLoggato] = useState<Utente | null>(null)
   const [mostraPopupLogin, setMostraPopupLogin] = useState(false)
   const [mostraPopupBenvenuto, setMostraPopupBenvenuto] = useState(false)
+  const [mostraPopupNicknameObbligatorio, setMostraPopupNicknameObbligatorio] = useState(false)
   
   const [emailLogin, setEmailLogin] = useState('')
   const [loginSent, setLoginSent] = useState(false)
@@ -277,8 +278,72 @@ export default function ThinkApp() {
     if (!utenteLoggato) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAccountData()
+    // Sincronizza profilo/nickname se loggato
+    syncProfile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, utenteLoggato])
+
+  async function syncProfile() {
+    if (!utenteLoggato) return
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('nickname')
+      .eq('id', utenteLoggato.id)
+      .single()
+
+    if (data?.nickname) {
+      setMioNickname(data.nickname)
+      localStorage.setItem('think_nickname', data.nickname)
+    } else if (error?.code === 'PGRST116') {
+      // Se il profilo non esiste ancora, mostriamo il popup obbligatorio
+      setMostraPopupNicknameObbligatorio(true)
+    }
+  }
+
+  async function handleCompleteProfile(chosenNick: string): Promise<{ error: any }> {
+    if (!utenteLoggato) return { error: new Error("Utente non loggato") }
+    const { error } = await supabase.from('profiles').insert([{ 
+      id: utenteLoggato.id, 
+      nickname: chosenNick 
+    }])
+    if (!error) {
+      setMioNickname(chosenNick)
+      localStorage.setItem('think_nickname', chosenNick)
+      setMostraPopupNicknameObbligatorio(false)
+    }
+    return { error }
+  }
+
+  async function handleSaveNickname(newNick: string): Promise<{ success: boolean; error?: string }> {
+    const err = nicknameErrorMessage(newNick)
+    if (err) return { success: false, error: err }
+
+    // Se loggato, salviamo su DB
+    if (utenteLoggato) {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({ id: utenteLoggato.id, nickname: newNick })
+
+      if (error) {
+        if (error.code === '23505') return { success: false, error: "Nickname già occupato da un altro utente" }
+        return { success: false, error: "Errore durante il salvataggio su database" }
+      }
+    } else {
+      // Se non loggato, controlliamo comunque se il nick è preso da un utente registrato
+      const { data } = await supabase
+        .from('profiles')
+        .select('nickname')
+        .eq('nickname', newNick)
+        .single()
+
+      if (data) return { success: false, error: "Questo nickname è riservato a un utente registrato" }
+    }
+
+    // In ogni caso, salviamo in locale
+    localStorage.setItem('think_nickname', newNick)
+    setMioNickname(newNick)
+    return { success: true }
+  }
 
 
   async function creaChat() {
@@ -784,6 +849,7 @@ export default function ThinkApp() {
               utenteLoggato={utenteLoggato} 
               mioNickname={mioNickname} 
               setMioNickname={setMioNickname} 
+              onSaveNickname={handleSaveNickname}
               nicknameErrorMessage={nicknameErrorMessage} 
               accountLoading={accountLoading} 
               appTheme={appTheme}
@@ -847,6 +913,7 @@ export default function ThinkApp() {
               utenteLoggato={utenteLoggato} 
               mioNickname={mioNickname} 
               setMioNickname={setMioNickname} 
+              onSaveNickname={handleSaveNickname}
               nicknameErrorMessage={nicknameErrorMessage} 
               accountLoading={accountLoading} 
               appTheme={appTheme}
@@ -899,6 +966,9 @@ export default function ThinkApp() {
         setEmailLogin={setEmailLogin} 
         inviaMagicLink={inviaMagicLink} 
         loginError={loginError} 
+        mostraPopupNicknameObbligatorio={mostraPopupNicknameObbligatorio}
+        onCompleteProfile={handleCompleteProfile}
+        nicknameErrorMessage={nicknameErrorMessage}
       />
     </div>
   )

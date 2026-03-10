@@ -9,6 +9,7 @@ interface AccountViewProps {
   utenteLoggato: Utente | null
   mioNickname: string
   setMioNickname: (v: string) => void
+  onSaveNickname: (nick: string) => Promise<{ success: boolean; error?: string }>
   nicknameErrorMessage: (nick: string) => string
   accountLoading: boolean
   appTheme: AppTheme
@@ -20,6 +21,7 @@ export function AccountView({
   utenteLoggato, 
   mioNickname, 
   setMioNickname, 
+  onSaveNickname,
   nicknameErrorMessage,
   accountLoading,
   appTheme,
@@ -127,11 +129,13 @@ export function AccountView({
           />
           <Button 
             size="icon"
-            onClick={() => {
-              const err = nicknameErrorMessage(mioNickname)
-              if (err) { alert(err); return }
-              localStorage.setItem("think_nickname", mioNickname)
-              alert("Nickname salvato con successo!")
+            onClick={async () => {
+              const res = await onSaveNickname(mioNickname)
+              if (res.success) {
+                alert("Nickname salvato con successo!")
+              } else {
+                alert(res.error || "Errore durante il salvataggio")
+              }
             }}
             className="absolute right-1 top-1 bottom-1 w-10 h-10 rounded-xl"
             title="Salva"

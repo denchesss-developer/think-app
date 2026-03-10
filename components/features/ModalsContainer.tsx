@@ -37,17 +37,50 @@ interface ModalsContainerProps {
   setEmailLogin: (v: string) => void
   inviaMagicLink: (e: React.FormEvent) => void
   loginError: string
+
+  mostraPopupNicknameObbligatorio: boolean
+  onCompleteProfile: (nick: string) => Promise<{ error: any }>
+  nicknameErrorMessage: (nick: string) => string
 }
 
 export function ModalsContainer({
   mostraModaleComponi, setMostraModaleComponi, nuovoMessaggio, setNuovoMessaggio, creaChat, cittaSimulata,
   mostraPopupBenvenuto, setMostraPopupBenvenuto, utenteLoggato, mioNickname, setMioNickname, salvaNicknameSoloLocale,
-  mostraPopupLogin, setMostraPopupLogin, loginSent, loginLoading, accediConGoogle, emailLogin, setEmailLogin, inviaMagicLink, loginError
+  mostraPopupLogin, setMostraPopupLogin, loginSent, loginLoading, accediConGoogle, emailLogin, setEmailLogin, inviaMagicLink, loginError,
+  mostraPopupNicknameObbligatorio, onCompleteProfile, nicknameErrorMessage
 }: ModalsContainerProps) {
+
+  const [localNick, setLocalNick] = React.useState("")
+  const [completeLoading, setCompleteLoading] = React.useState(false)
+  const [completeError, setCompleteError] = React.useState("")
+
+  React.useEffect(() => {
+    if (mostraPopupNicknameObbligatorio) {
+      setLocalNick(mioNickname || "")
+    }
+  }, [mostraPopupNicknameObbligatorio, mioNickname])
+
+  async function handleFinalize() {
+    setCompleteError("")
+    const err = nicknameErrorMessage(localNick)
+    if (err) { setCompleteError(err); return }
+
+    setCompleteLoading(true)
+    const { error } = await onCompleteProfile(localNick)
+    setCompleteLoading(false)
+
+    if (error) {
+      if (error.code === '23505') {
+        setCompleteError("Questo nickname è già stato preso da un altro utente")
+      } else {
+        setCompleteError("Errore durante il salvataggio. Riprova.")
+      }
+    }
+  }
   
   return (
     <>
-      <div className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-md transition-opacity duration-300 ${mostraModaleComponi || (mostraPopupBenvenuto && !utenteLoggato) || (mostraPopupLogin && !utenteLoggato) ? "opacity-100" : "opacity-0 pointer-events-none"}`} />
+      <div className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-md transition-opacity duration-300 ${mostraModaleComponi || (mostraPopupBenvenuto && !utenteLoggato) || (mostraPopupLogin && !utenteLoggato) || mostraPopupNicknameObbligatorio ? "opacity-100" : "opacity-0 pointer-events-none"}`} />
 
       {/* COMPOSER MODAL */}
       <div className={`fixed inset-0 z-[101] flex items-center justify-center p-4 sm:p-6 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mostraModaleComponi ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-8 pointer-events-none"}`}>
@@ -168,6 +201,57 @@ export function ModalsContainer({
               </p>
             </div>
           )}
+        </GlassPanel>
+      </div>
+
+      {/* MANDATORY NICKNAME MODAL (FIRST LOGIN) */}
+      <div className={`fixed inset-0 z-[101] flex items-center justify-center p-4 transition-all duration-500 ease-out ${mostraPopupNicknameObbligatorio ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"}`}>
+        <GlassPanel className="p-8 sm:p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md text-center relative overflow-hidden bg-[var(--color-bg-base)]/95 backdrop-blur-3xl border border-[var(--color-brand-blue)]/20">
+          <div className="absolute -top-20 -right-20 w-48 h-48 bg-[var(--color-brand-blue)]/10 blur-3xl rounded-full" />
+          
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--color-brand-blue)]/15 flex items-center justify-center border border-[var(--color-brand-blue)]/20 shadow-inner">
+            <span className="text-2xl">✨</span>
+          </div>
+
+          <h2 className="text-2xl font-black mb-3 tracking-tight text-[var(--color-text-main)]">Benvenuta/o su Think!</h2>
+          <p className="font-medium mb-8 text-[14px] text-[var(--color-text-muted)] leading-relaxed px-2">
+            Sei quasi pronto ad entrare. Come vuoi farti chiamare nel mondo? Scegli il tuo nickname unico.
+          </p>
+
+          <div className="space-y-1 mb-8">
+            <Input 
+              type="text" 
+              placeholder="Esempio: Esploratore_99"
+              className="text-center text-lg font-bold py-4 h-14 rounded-2xl border-[var(--color-border-strong)] focus:border-[var(--color-brand-blue)] transition-all" 
+              value={localNick} 
+              onChange={(e) => setLocalNick(e.target.value)} 
+              disabled={completeLoading}
+            />
+            {completeError && (
+              <p className="text-red-400 text-[11px] font-bold mt-2 bg-red-400/10 py-1.5 px-3 rounded-lg border border-red-400/20">
+                {completeError}
+              </p>
+            )}
+            <p className="text-[10px] font-bold text-[var(--color-text-faint)] mt-2 uppercase tracking-widest">
+              3-20 caratteri, solo lettere, numeri e _
+            </p>
+          </div>
+
+          <Button 
+            onClick={handleFinalize} 
+            disabled={completeLoading || !localNick.trim()}
+            size="lg" 
+            className="w-full py-6 text-base font-black bg-gradient-to-r from-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] text-white shadow-xl hover:shadow-blue-500/20 border-none group"
+          >
+            {completeLoading ? (
+              <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                Inizia l'Esplorazione
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+              </span>
+            )}
+          </Button>
         </GlassPanel>
       </div>
     </>
