@@ -1,7 +1,7 @@
 import React from "react"
 import { GlassCard } from "@/components/ui/Glass"
 import { Badge } from "@/components/ui/Badge"
-import { MapPin, MessageCircle, Clock } from "lucide-react"
+import { MapPin, MessageCircle, Clock, Plane } from "lucide-react"
 import { calcolaStatoVitale, STILI_STATO } from "@/components/features/MapGlobe"
 
 export function timeAgo(dateString: string) {
@@ -46,7 +46,7 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
             {chat.autore}
           </span>
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--color-bg-hover)] text-[var(--color-text-muted)]">
-            <MapPin className="w-3.5 h-3.5" />
+            {hasReplies ? <Plane className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
             <span className="text-[10px] font-bold tracking-widest uppercase">{chat.regione}</span>
           </div>
         </div>

@@ -20,6 +20,7 @@ declare global {
     autore: string;
     user_id: string | null;
     created_at: string;
+    regione?: string;
   }
 
   interface Bookmark {

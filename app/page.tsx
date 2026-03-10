@@ -611,18 +611,20 @@ export default function ThinkApp() {
   async function inviaRisposta() {
     if (!nuovaRisposta.trim() || !chatAttiva) return
 
+    const mieCoord = await ottieniCoordinate()
+
     await supabase.from('risposte').insert([{
       testo: nuovaRisposta,
       chat_id: chatAttiva.id,
       autore: utenteLoggato ? (mioNickname || 'Anonimo') : mioNickname,
-      user_id: utenteLoggato ? utenteLoggato.id : null
+      user_id: utenteLoggato ? utenteLoggato.id : null,
+      regione: mieCoord.regione
     }])
 
     setNuovaRisposta('')
-    const mieCoord = await ottieniCoordinate()
     const newCount = (chatAttiva.risposte_count ?? 0) + 1
-    const endLat = (chatAttiva.lat + mieCoord.lat) / 2
-    const endLng = (chatAttiva.lng + mieCoord.lng) / 2
+    const endLat = mieCoord.lat
+    const endLng = mieCoord.lng
 
     await supabase.from('chats')
       .update({ lat: endLat, lng: endLng, regione: mieCoord.regione, risposte_count: newCount, ultima_attivita: new Date().toISOString() })
@@ -875,7 +877,15 @@ export default function ThinkApp() {
                   {/* Content */}
                   <div className="flex-1 pb-4">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[12px] font-bold text-[var(--color-text-main)]">{r.autore}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[12px] font-bold text-[var(--color-text-main)]">{r.autore}</span>
+                        {r.regione && (
+                          <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] flex items-center gap-0.5 bg-[var(--color-bg-hover)] px-1.5 py-0.5 rounded-sm">
+                            <MapPin className="w-2.5 h-2.5" />
+                            {r.regione}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] text-[var(--color-text-faint)]">{timeAgo(r.created_at)}</span>
                       <button
                         type="button"
