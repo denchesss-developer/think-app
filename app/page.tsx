@@ -156,74 +156,60 @@ export default function ThinkApp() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchChats().catch(e => console.error("DEBUG: fetchChats failed early:", e))
 
-    // NICKNAME LOGIC - Solo per utenti NON loggati
+    // NICKNAME LOGIC
     let nickLocale = localStorage.getItem('think_nickname')
-    if (!nickLocale && !utenteLoggato) {
+    if (!nickLocale) {
       nickLocale = `${ANIMALI[Math.floor(Math.random() * ANIMALI.length)]}_${AGGETTIVI[Math.floor(Math.random() * AGGETTIVI.length)]}_${Math.floor(Math.random() * 100)}`
       localStorage.setItem('think_nickname', nickLocale)
       setMostraPopupBenvenuto(true)
-    } else if (!nickLocale && utenteLoggato) {
-      // Se è loggato ma non ha nickname, non generiamo nulla qui - syncProfile gestirà il popup
-      nickLocale = ''
     }
-    if (nickLocale) {
-      setMioNickname(nickLocale)
-    }
+    setMioNickname(nickLocale)
 
     // ALERT DIAGNOSTICO IMMEDIATO E PULIZIA URL
     if (typeof window !== 'undefined') {
       (window as any).THINK_VERSION = "v4"
       console.warn("DEBUG/ALERT: Think App v4 Loaded")
 
-      // Handle OAuth token - prova prima il metodo built-in di Supabase
+      // Handle OAuth token - deve essere processato PRIMA di getSession
       const processOAuth = async () => {
-        // Prova prima getSession che dovrebbe gestire automaticamente l'hash
-        const { data: { session }, error } = await supabase.auth.getSession()
+        // PRIMA DI TUTTO: se c'è un hash con token, pulisci tutto e basta
+        if (window.location.hash.includes('access_token')) {
+          console.warn("DEBUG: Hash with access_token detected, cleaning URL first...")
 
-        if (session) {
-          console.warn("DEBUG: getSession found session for:", session.user.email)
-          setUtenteLoggato(session.user as unknown as Utente)
-          // Pulisci URL
-          window.history.replaceState(null, '', window.location.pathname)
-          return
-        }
+          // Estrai SOLO il primo access_token
+          const hash = window.location.hash
+          // Trova il primo access_token=
+          const tokenMatch = hash.match(/access_token=([^&#]+)/)
+          const refreshMatch = hash.match(/refresh_token=([^&#]+)/)
 
-        if (error) {
-          console.error("DEBUG: getSession error:", error.message)
-        }
+          const accessToken = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null
+          const refreshToken = refreshMatch ? decodeURIComponent(refreshMatch[1]) : null
 
-        // Se getSession non ha funzionato, prova manualmente
-        const hash = window.location.hash
-        console.warn("DEBUG: Hash:", hash.substring(0, 50))
+          if (accessToken) {
+            console.warn("DEBUG: Setting session with first access_token...")
+            try {
+              const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken || ''
+              })
 
-        if (hash.includes('access_token')) {
-          const tokenStart = hash.indexOf('access_token=')
-          if (tokenStart === -1) return
-
-          const tokenPart = hash.substring(tokenStart + 13)
-          const accessToken = tokenPart.split('&')[0]
-
-          const refreshStart = hash.indexOf('refresh_token=')
-          const refreshToken = refreshStart > -1 ? hash.substring(refreshStart + 14).split('&')[0] : ''
-
-          if (accessToken && accessToken.length > 10) {
-            const { data, error: setError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken || ''
-            })
-
-            if (setError) {
-              console.error("DEBUG: setSession error:", setError.message)
-            } else if (data.session) {
-              console.warn("DEBUG: Manual session set for:", data.session.user.email)
-              setUtenteLoggato(data.session.user as unknown as Utente)
+              if (error) {
+                console.error("DEBUG: setSession error:", error.message)
+              } else if (data.session) {
+                console.warn("DEBUG: Session set! User:", data.session.user.email)
+                setUtenteLoggato(data.session.user as unknown as Utente)
+              }
+            } catch (e) {
+              console.error("DEBUG: Exception in setSession:", e)
             }
           }
-        }
 
-        // Pulisci URL
-        window.history.replaceState(null, '', window.location.pathname)
+          // Pulisci URL DOPO
+          window.history.replaceState(null, '', window.location.pathname)
+        }
       }
+
+      // Esegui subito
       processOAuth()
     }
 
@@ -253,13 +239,38 @@ export default function ThinkApp() {
       const user = session?.user as unknown as Utente | null
       console.warn("DEBUG/ALERT: getSession user:", user?.id || "not logged in")
       if (user) {
-        // alert("DEBUG: Login rilevato per " + user.email)
         setUtenteLoggato(user)
         setMostraPopupLogin(false)
+        // Trigger syncProfile immediately after setting user
+        syncProfileImmediate(user.id)
       } else {
         setUtenteLoggato(null)
       }
     }).catch(e => console.error("DEBUG: getSession exception:", e))
+
+    // Funzione per syncronizzare il profilo - definita qui per essere chiamata subito
+    const syncProfileImmediate = async (userId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('nickname')
+          .eq('id', userId)
+          .single()
+
+        if (error || !data || !data.nickname || data.nickname.trim() === '') {
+          console.log("DEBUG: Profile needs nickname, showing popup")
+          setMostraPopupNicknameObbligatorio(true)
+          setMostraPopupBenvenuto(false)
+        } else {
+          console.log("DEBUG: Profile found with nickname:", data.nickname)
+          setMioNickname(data.nickname)
+          localStorage.setItem('think_nickname', data.nickname)
+        }
+      } catch (err) {
+        console.error("DEBUG: Error checking profile:", err)
+        setMostraPopupNicknameObbligatorio(true)
+      }
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const user = session?.user as unknown as Utente | null
@@ -403,9 +414,6 @@ export default function ThinkApp() {
   async function syncProfile() {
     if (!utenteLoggato) return
     console.log("DEBUG: syncProfile started for", utenteLoggato.id)
-
-    // Ritarda leggermente per assicurare che lo stato sia pronto
-    await new Promise(resolve => setTimeout(resolve, 100))
 
     try {
       const { data, error } = await supabase
