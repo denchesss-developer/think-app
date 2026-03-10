@@ -141,7 +141,7 @@ export function MapGlobe({
   }
 
   return (
-    <div className={`absolute top-0 bottom-0 right-0 transition-[left] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center ${sidebarOpen ? "lg:left-[420px]" : "left-0"} max-lg:left-0`}>
+    <div className={`absolute top-0 right-0 transition-[left] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center ${sidebarOpen ? "lg:left-[420px]" : "left-0"} max-lg:left-0 lg:bottom-0 max-lg:bottom-[12dvh]`}>
       <Globe
         ref={globeRef}
         backgroundColor="rgba(0,0,0,0)"
