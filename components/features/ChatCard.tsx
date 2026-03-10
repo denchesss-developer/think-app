@@ -1,7 +1,7 @@
 import React from "react"
 import { GlassCard } from "@/components/ui/Glass"
 import { Badge } from "@/components/ui/Badge"
-import { MapPin, MessageCircle, Clock } from "lucide-react"
+import { MapPin, MessageCircle, Clock, Share2 } from "lucide-react"
 import { calcolaStatoVitale, STILI_STATO } from "@/components/features/MapGlobe"
 
 export function timeAgo(dateString: string) {
@@ -28,8 +28,8 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
   if (stato === "archivio") badgeVariant = "archived"
 
   return (
-    <div 
-      className={`relative mb-5 cursor-pointer group transition-all duration-500 ease-out ${isSbiadita ? 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0' : 'opacity-100'}`} 
+    <div
+      className={`relative mb-5 cursor-pointer group transition-all duration-500 ease-out ${isSbiadita ? 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0' : 'opacity-100'}`}
       onClick={() => onClick(chat)}
     >
       {/* Stacked Cards Effect for Threads */}
@@ -39,7 +39,7 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
           <div className="absolute inset-0 translate-y-1.5 translate-x-0.5 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] opacity-70 transition-transform group-hover:translate-y-2 group-hover:translate-x-1" />
         </>
       )}
-      
+
       <GlassCard className="relative z-10 transition-transform duration-300 group-hover:-translate-y-1 group-active:translate-y-0 group-active:scale-[0.98]">
         <div className="flex items-center justify-between mb-3">
           <span className="text-[15px] font-bold tracking-tight text-[var(--color-text-main)]">
@@ -50,7 +50,7 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
             <span className="text-[10px] font-bold tracking-widest uppercase">{chat.regione}</span>
           </div>
         </div>
-        
+
         <p className="text-[15px] leading-relaxed mb-5 font-medium text-[var(--color-text-main)] opacity-90">
           {chat.titolo}
         </p>
@@ -60,17 +60,38 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
             <Badge variant={badgeVariant} icon={stile.icona}>
               <span className="hidden xs:inline ml-1 text-[10px]">{stile.nome}</span>
             </Badge>
-            
+
             <div className="flex items-center gap-1.5 text-[var(--color-text-muted)] text-xs font-bold bg-[var(--color-bg-hover)] px-2 py-1 rounded-md">
               <MessageCircle className="w-3.5 h-3.5" />
               <span>{count}</span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-faint)]">
             <Clock className="w-3.5 h-3.5" />
             <span>{timeAgo(chat.ultima_attivita || chat.created_at)}</span>
           </div>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              const shareUrl = `${window.location.origin}/?chat=${chat.id}`
+              if (navigator.share) {
+                navigator.share({
+                  title: chat.titolo,
+                  text: `Leggi questo pensiero: ${chat.titolo}`,
+                  url: shareUrl,
+                })
+              } else {
+                navigator.clipboard.writeText(shareUrl)
+                alert("Link copiato negli appunti!")
+              }
+            }}
+            className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors p-1 rounded-md hover:bg-[var(--color-bg-hover)]"
+            aria-label="Condividi"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
         </div>
       </GlassCard>
     </div>

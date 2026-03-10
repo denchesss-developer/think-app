@@ -175,47 +175,52 @@ export default function ThinkApp() {
       (window as any).THINK_VERSION = "v4"
       console.warn("DEBUG/ALERT: Think App v4 Loaded")
 
-      // Handle OAuth token - deve essere processato PRIMA di getSession
+      // Handle OAuth token - prova prima il metodo built-in di Supabase
       const processOAuth = async () => {
-        const hash = window.location.hash
-        console.warn("DEBUG: Hash length:", hash.length)
-        
-        // Cerca semplicemente access_token=
-        const tokenStart = hash.indexOf('access_token=')
-        if (tokenStart === -1) {
-          console.warn("DEBUG: No access_token found")
+        // Prova prima getSession che dovrebbe gestire automaticamente l'hash
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        if (session) {
+          console.warn("DEBUG: getSession found session for:", session.user.email)
+          setUtenteLoggato(session.user as unknown as Utente)
+          // Pulisci URL
+          window.history.replaceState(null, '', window.location.pathname)
           return
         }
-        
-        // Estrai il token
-        const tokenPart = hash.substring(tokenStart + 13) // 13 = length of 'access_token='
-        const accessToken = tokenPart.split('&')[0]
-        
-        // Trova refresh_token
-        const refreshStart = hash.indexOf('refresh_token=')
-        const refreshToken = refreshStart > -1 ? hash.substring(refreshStart + 14).split('&')[0] : ''
-        
-        console.warn("DEBUG: Found access_token, length:", accessToken.length)
-        
-        if (accessToken && accessToken.length > 10) {
-          console.warn("DEBUG: Setting session...")
-          try {
-            const { data, error } = await supabase.auth.setSession({
+
+        if (error) {
+          console.error("DEBUG: getSession error:", error.message)
+        }
+
+        // Se getSession non ha funzionato, prova manualmente
+        const hash = window.location.hash
+        console.warn("DEBUG: Hash:", hash.substring(0, 50))
+
+        if (hash.includes('access_token')) {
+          const tokenStart = hash.indexOf('access_token=')
+          if (tokenStart === -1) return
+
+          const tokenPart = hash.substring(tokenStart + 13)
+          const accessToken = tokenPart.split('&')[0]
+
+          const refreshStart = hash.indexOf('refresh_token=')
+          const refreshToken = refreshStart > -1 ? hash.substring(refreshStart + 14).split('&')[0] : ''
+
+          if (accessToken && accessToken.length > 10) {
+            const { data, error: setError } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken || ''
             })
-            
-            if (error) {
-              console.error("DEBUG: setSession error:", error.message)
+
+            if (setError) {
+              console.error("DEBUG: setSession error:", setError.message)
             } else if (data.session) {
-              console.warn("DEBUG: Session set! User:", data.session.user.email)
+              console.warn("DEBUG: Manual session set for:", data.session.user.email)
               setUtenteLoggato(data.session.user as unknown as Utente)
             }
-          } catch (e) {
-            console.error("DEBUG: Exception:", e)
           }
         }
-        
+
         // Pulisci URL
         window.history.replaceState(null, '', window.location.pathname)
       }
