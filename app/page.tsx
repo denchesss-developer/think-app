@@ -363,16 +363,45 @@ export default function ThinkApp() {
     setLoginLoading(true)
     setLoginError('')
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-    const { error } = await supabase.auth.signInWithOAuth({
+    
+    // Auth PWA-friendly per non uscire dall'app
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: siteUrl,
-        queryParams: { prompt: 'select_account' }
+        redirectTo: `${siteUrl}/auth/callback`,
+        queryParams: { prompt: 'select_account' },
+        skipBrowserRedirect: true // Genera il link senza redirigere
       }
     })
+
     if (error) {
       setLoginError(error.message)
       setLoginLoading(false)
+      return
+    }
+
+    if (data?.url) {
+      // Ascolta il messaggio della finestra popup
+      const messageListener = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return
+        if (event.data === 'login_success') {
+          window.removeEventListener('message', messageListener)
+          setMostraPopupLogin(false)
+          setLoginLoading(false)
+          window.location.reload() // Ricarica lo stato
+        }
+      }
+      window.addEventListener('message', messageListener)
+
+      // Apre Google OAuth in un popup dedicato (così la PWA rimane sotto)
+      const popupWidth = 500
+      const popupHeight = 600
+      const left = window.screen.width / 2 - popupWidth / 2
+      const top = window.screen.height / 2 - popupHeight / 2
+      window.open(data.url, 'google_login_popup', `width=${popupWidth},height=${popupHeight},top=${top},left=${left},popup=yes`)
+      
+      // Se si chiude il popup manuamente, sblocchiamo il tasto pre-tempo
+      setTimeout(() => setLoginLoading(false), 15000) 
     }
   }
 
@@ -650,14 +679,14 @@ export default function ThinkApp() {
         {/* Logo Think: scuro in light mode, bianco in dark mode */}
         <div className="flex items-center">
           <img
-            src="/think-logo-dark.svg"
+            src="/think-logo-dark.png"
             alt="Think"
-            className="h-8 w-auto block dark:hidden"
+            className="h-8 w-auto block dark:hidden object-contain"
           />
           <img
-            src="/think-logo-white.svg"
+            src="/think-logo-white.png"
             alt="Think"
-            className="h-8 w-auto hidden dark:block"
+            className="h-8 w-auto hidden dark:block object-contain"
           />
         </div>
         <div className="flex items-center gap-2 pointer-events-auto">
