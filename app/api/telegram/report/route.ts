@@ -89,6 +89,14 @@ export async function GET(req: Request) {
     const bookPeriodo = await getCount('bookmarks', startIso, null);
     const bookPrev = await getCount('bookmarks', prevStartIso, startIso);
 
+    // 5. SEGNALAZIONI RICEVUTE
+    const segnPeriodo = await getCount('segnalazioni', startIso, null);
+    const segnPrev = await getCount('segnalazioni', prevStartIso, startIso);
+
+    // 6. ENGAGEMENT RATIO (risposte per pensiero)
+    const engagementNow = chatsPeriodo > 0 ? (rispPeriodo / chatsPeriodo).toFixed(1) : '0';
+    const engagementPrev = chatsPrev > 0 ? (rispPrev / chatsPrev).toFixed(1) : '0';
+
     // Calcolo Percentuali
     const calcVar = (curr: number, prev: number) => {
       if (prev === 0) return curr > 0 ? '+100%' : '0%';
@@ -100,27 +108,39 @@ export async function GET(req: Request) {
     const varChats = calcVar(chatsPeriodo, chatsPrev);
     const varRisp = calcVar(rispPeriodo, rispPrev);
     const varBook = calcVar(bookPeriodo, bookPrev);
+    const varSegn = calcVar(segnPeriodo, segnPrev);
+    const varEngagement = calcVar(Number(engagementNow), Number(engagementPrev));
+
+    // Formatta data in italiano es. "3 Mar 2025"
+    const fmt = (d: Date) => d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+    const rangeLabel = `${fmt(startDate)} — ${fmt(now)}`;
 
     // Costruzione Formattazione Messaggio 
     const emojiMap: Record<string, string> = {
       settimana: '🗓', mese: '📅', trimestre: '📊', semestre: '📈'
     };
 
-    let msg = `${emojiMap[periodo]} <b>REPORT ${nomePeriodo} THINK APP</b>\n`;
-    msg += `<i>Ecco come stanno andando le cose:</i>\n\n`;
+    let msg = `${emojiMap[periodo]} <b>REPORT ${nomePeriodo} — THINK APP</b>\n`;
+    msg += `<i>📆 Periodo: ${rangeLabel}</i>\n\n`;
 
-    msg += `👥 <b>UTENTI REGISTRATI:</b> ${totalUsersCount}\n`;
-    msg += `↳ <i>Nuovi questo periodo:</i> <b>${nuoviUtentiPeriodo}</b> (<i>${varUtenti}</i> rispetto al prececedente)\n\n`;
+    msg += `👥 <b>UTENTI REGISTRATI:</b> ${totalUsersCount} totali\n`;
+    msg += `↳ <i>Nuovi questo periodo:</i> <b>${nuoviUtentiPeriodo}</b> (<i>${varUtenti}</i> rispetto al precedente)\n\n`;
 
-    msg += `💭 <b>PENSIERI CREATI:</b> ${chatsPeriodo} (Tot. ${chatsTotali})\n`;
+    msg += `💭 <b>PENSIERI CREATI:</b> ${chatsPeriodo} (Tot. in DB: ${chatsTotali})\n`;
     msg += `↳ <i>Variazione creazione:</i> <b>${varChats}</b>\n\n`;
 
-    msg += `💬 <b>COMMENTI/RISPOSTE:</b> ${rispPeriodo}\n`;
+    msg += `💬 <b>INTERAZIONI (Commenti):</b> ${rispPeriodo}\n`;
     msg += `↳ <i>Variazione interazioni:</i> <b>${varRisp}</b>\n\n`;
 
-    msg += `💾 <b>PENSIERI SALVATI:</b> ${bookPeriodo}\n`;
-    msg += `↳ <i>Interesse generale:</i> <b>${varBook}</b>\n`;
+    msg += `📊 <b>ENGAGEMENT:</b> ~${engagementNow} risposte per pensiero\n`;
+    msg += `↳ <i>Variazione engagement:</i> <b>${varEngagement}</b>\n\n`;
 
+    msg += `💾 <b>PENSIERI SALVATI:</b> ${bookPeriodo}\n`;
+    msg += `↳ <i>Interesse generale:</i> <b>${varBook}</b>\n\n`;
+
+    msg += `🚩 <b>SEGNALAZIONI RICEVUTE:</b> ${segnPeriodo}\n`;
+    msg += `↳ <i>Variazione segnalazioni:</i> <b>${varSegn}</b>\n`;
+  
     msg += `\n<i>Continuiamo a spingere su questa rotta! 🚀</i>`;
 
     // Invio Telegram
