@@ -648,6 +648,10 @@ export default function ThinkApp() {
 
   async function logout() {
     await supabase.auth.signOut()
+    localStorage.removeItem('think_nickname')
+    setMioNickname('')
+    setUtenteLoggato(null)
+    setMostraPopupBenvenuto(true)
     setMode("feed")
     setActiveTab("home")
   }
