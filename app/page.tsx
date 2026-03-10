@@ -403,14 +403,11 @@ export default function ThinkApp() {
 
       if (error) {
         console.log("DEBUG: syncProfile error:", error.code, error.message)
-        if (error.code === 'PGRST116') {
-          console.log("DEBUG: No profile found. Triggering mandatory modal.")
-          setMostraPopupNicknameObbligatorio(true)
-          setMostraPopupBenvenuto(false)
-          setMostraPopupLogin(false)
-        } else {
-          console.error("DEBUG: Unexpected error fetching profile:", error)
-        }
+        // Qualsiasi errore significa che dobbiamo mostrare il popup (profilo non esistente o errore)
+        console.log("DEBUG: Profile error, triggering mandatory modal.")
+        setMostraPopupNicknameObbligatorio(true)
+        setMostraPopupBenvenuto(false)
+        setMostraPopupLogin(false)
         return
       }
 
