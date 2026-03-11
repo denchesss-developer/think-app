@@ -137,6 +137,10 @@ export function MobileSheet({
               : undefined,
         }}
         onTouchMove={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
       >
         {/* Header - Drag Handle & Close */}
         <div className="w-full relative flex items-center justify-center pt-4 pb-3 flex-shrink-0 z-20">

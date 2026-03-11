@@ -1,5 +1,5 @@
 import React from "react"
-import { MapPin, Plus, User, Compass, Bookmark, Send } from "lucide-react"
+import { MapPin, Plus, User, Compass, Bookmark, SendHorizontal } from "lucide-react"
 
 interface BottomNavigationProps {
   activeTab: string
@@ -61,7 +61,7 @@ export function BottomNavigation({
           type="button"
           onClick={isChatMode ? onInviaRisposta : onCompose}
           className={`flex-shrink-0 bg-[var(--color-brand-blue)] text-white flex items-center justify-center shadow-[0_4px_24px_rgba(59,130,246,0.6)] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95
-            ${isChatMode ? "h-[40px] w-[40px] rounded-full ml-1 mr-2 rotate-0" : "h-[52px] w-[52px] rounded-full mx-3 rotate-90"}
+            ${isChatMode ? "h-[44px] w-[44px] rounded-full ml-1 mr-2 rotate-0" : "h-[52px] w-[52px] rounded-full mx-3 rotate-90"}
           `}
         >
           <div className="relative w-full h-full flex items-center justify-center">
@@ -69,9 +69,9 @@ export function BottomNavigation({
               strokeWidth={3} 
               className={`absolute transition-all duration-400 flex items-center justify-center ${isChatMode ? "opacity-0 scale-50 rotate-90" : "opacity-100 scale-100 rotate-0"} w-6 h-6`} 
             />
-            <Send 
+            <SendHorizontal 
               strokeWidth={2.5} 
-              className={`absolute transition-all duration-400 flex items-center justify-center ${isChatMode ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"} w-5 h-5 pb-[1px] pr-[2px]`} 
+              className={`absolute transition-all duration-400 flex items-center justify-center ${isChatMode ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"} w-5 h-5 -ml-[2px] mt-[1px]`} 
             />
           </div>
         </button>
