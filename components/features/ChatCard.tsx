@@ -1,7 +1,7 @@
 import React from "react"
 import { GlassCard } from "@/components/ui/Glass"
 import { Badge } from "@/components/ui/Badge"
-import { MapPin, MessageCircle, Clock, Plane } from "lucide-react"
+import { MapPin, MessageCircle, Clock, Plane, Share2 } from "lucide-react"
 import { calcolaStatoVitale, STILI_STATO } from "@/components/features/MapGlobe"
 
 export function timeAgo(dateString: string) {
@@ -26,6 +26,22 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
   if (stato === "albero") badgeVariant = "tree"
   if (stato === "foglia_secca") badgeVariant = "faded"
   if (stato === "archivio") badgeVariant = "archived"
+
+  async function condividi(e: React.MouseEvent) {
+    e.stopPropagation() // Don't open the chat
+    const url = `${window.location.origin}?thought=${chat.id}`
+    const text = `"${chat.titolo}" — da ${chat.regione || 'Think'}`
+
+    if (navigator.share) {
+      await navigator.share({ title: 'Think', text, url }).catch(() => {})
+    } else {
+      await navigator.clipboard.writeText(`${text}\n${url}`)
+      // Brief visual feedback — swap icon content
+      const btn = e.currentTarget as HTMLElement
+      btn.textContent = '✓'
+      setTimeout(() => { btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>' }, 1500)
+    }
+  }
 
   return (
     <div 
@@ -56,7 +72,7 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
         </p>
 
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--color-border-subtle)]">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Badge variant={badgeVariant} icon={stile.icona}>
               <span className="hidden xs:inline ml-1 text-[10px]">{stile.nome}</span>
             </Badge>
@@ -65,6 +81,16 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
               <MessageCircle className="w-3.5 h-3.5" />
               <span>{count}</span>
             </div>
+
+            {/* Share button */}
+            <button
+              type="button"
+              onClick={condividi}
+              className="flex items-center justify-center w-6 h-6 rounded-md bg-[var(--color-bg-hover)] hover:bg-[var(--color-brand-blue)]/20 text-[var(--color-text-muted)] hover:text-[var(--color-brand-blue)] transition-all duration-200"
+              title="Condividi pensiero"
+            >
+              <Share2 className="w-3 h-3" />
+            </button>
           </div>
           
           <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-faint)]">

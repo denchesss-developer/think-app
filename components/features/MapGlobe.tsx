@@ -193,7 +193,7 @@ export function MapGlobe({
         htmlLat="lat" 
         htmlLng="lng" 
         htmlElement={(d: object) => disegnaMarkerGlobo(d as Chat)}
-        htmlTransitionDuration={1000}
+        htmlTransitionDuration={8000}
       />
 
       <div className="absolute top-6 right-6 z-10 hidden sm:flex items-center glass-panel p-2 rounded-xl text-[var(--color-text-muted)] text-xs font-semibold shadow-lg backdrop-blur-3xl">

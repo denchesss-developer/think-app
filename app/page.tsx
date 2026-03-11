@@ -607,14 +607,19 @@ export default function ThinkApp() {
 
     setNuovaRisposta('')
     const newCount = (chatAttiva.risposte_count ?? 0) + 1
-    const endLat = mieCoord.lat
-    const endLng = mieCoord.lng
+
+    // Move to midpoint between current position and replier's position
+    // This creates gradual, organic "wandering" movement across the globe
+    const currentLat = chatAttiva.lat ?? mieCoord.lat
+    const currentLng = chatAttiva.lng ?? mieCoord.lng
+    const midLat = (currentLat + mieCoord.lat) / 2
+    const midLng = (currentLng + mieCoord.lng) / 2
 
     await supabase.from('chats')
-      .update({ lat: endLat, lng: endLng, regione: mieCoord.regione, risposte_count: newCount, ultima_attivita: new Date().toISOString() })
+      .update({ lat: midLat, lng: midLng, regione: mieCoord.regione, risposte_count: newCount, ultima_attivita: new Date().toISOString() })
       .eq('id', chatAttiva.id)
 
-    setChatAttiva({ ...chatAttiva, lat: endLat, lng: endLng, regione: mieCoord.regione, risposte_count: newCount })
+    setChatAttiva({ ...chatAttiva, lat: midLat, lng: midLng, regione: mieCoord.regione, risposte_count: newCount })
   }
 
   async function toggleBookmark(chat: Chat) {
