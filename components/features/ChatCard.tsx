@@ -61,9 +61,11 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
           <span className="text-[15px] font-bold tracking-tight text-[var(--color-text-main)]">
             {chat.autore}
           </span>
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--color-bg-hover)] text-[var(--color-text-muted)]">
-            {hasReplies ? <Plane className="w-3.5 h-3.5" /> : <MapPin className="w-3.5 h-3.5" />}
-            <span className="text-[10px] font-bold tracking-widest uppercase">{chat.regione}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-hover)] text-[var(--color-text-muted)]">
+            {hasReplies ? <Plane className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" /> : <MapPin className="w-3.5 h-3.5" />}
+            <span className="text-[10px] font-bold tracking-widest uppercase">
+              {hasReplies ? 'In viaggio' : chat.regione}
+            </span>
           </div>
         </div>
         
@@ -77,19 +79,19 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
               <span className="hidden xs:inline ml-1 text-[10px]">{stile.nome}</span>
             </Badge>
             
-            <div className="flex items-center gap-1.5 text-[var(--color-text-muted)] text-xs font-bold bg-[var(--color-bg-hover)] px-2 py-1 rounded-md">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-widest bg-[var(--color-bg-hover)] border-[var(--color-border-subtle)] text-[var(--color-text-muted)]">
               <MessageCircle className="w-3.5 h-3.5" />
               <span>{count}</span>
             </div>
 
-            {/* Share button */}
+            {/* Share button — same height as Badge */}
             <button
               type="button"
               onClick={condividi}
-              className="flex items-center justify-center w-6 h-6 rounded-md bg-[var(--color-bg-hover)] hover:bg-[var(--color-brand-blue)]/20 text-[var(--color-text-muted)] hover:text-[var(--color-brand-blue)] transition-all duration-200"
+              className="inline-flex items-center justify-center px-2.5 py-1 rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-hover)] hover:bg-[var(--color-brand-blue)]/20 text-[var(--color-text-muted)] hover:text-[var(--color-brand-blue)] transition-all duration-200"
               title="Condividi pensiero"
             >
-              <Share2 className="w-3 h-3" />
+              <Share2 className="w-3.5 h-3.5" />
             </button>
           </div>
           
