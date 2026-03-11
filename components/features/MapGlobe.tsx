@@ -65,6 +65,10 @@ export function MapGlobe({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globeRef = useRef<any>(null)
+  // Cache DOM elements by chat ID so react-globe.gl gets the SAME element reference
+  // on each render. This is required for htmlTransitionDuration CSS transitions to work.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const elementCacheRef = useRef<Map<string, any>>(new Map())
 
   useEffect(() => {
     if (globeRef.current) {
@@ -73,25 +77,56 @@ export function MapGlobe({
     }
   }, [])
 
-  const disegnaMarkerGlobo = (item: Chat) => {
-    const el = document.createElement('div')
-    // Stop wheel events to allow map scrolling
-    el.addEventListener('wheel', (e) => e.stopPropagation(), { passive: false })
+  // Sync cache: remove stale elements for chats that no longer exist
+  useEffect(() => {
+    const chatIds = new Set(chats.map(c => String(c.id)))
+    elementCacheRef.current.forEach((_, id: string) => {
+      if (!chatIds.has(id)) elementCacheRef.current.delete(id)
+    })
+  }, [chats])
+
+  const disegnaMarkerGlobo = (item: Chat): HTMLElement => {
+    // Reuse the cached element for this chat ID to preserve the same DOM reference.
+    // react-globe.gl stores elements by reference in a WeakMap —
+    // returning the SAME element lets it apply CSS position transitions.
+    let el = elementCacheRef.current.get(String(item.id))
+
+    if (!el) {
+      el = document.createElement('div')
+      el.addEventListener('wheel', (e: Event) => e.stopPropagation(), { passive: false })
+
+      // Attach event listeners ONCE — read __data at call time to avoid stale closures
+      el.addEventListener('mousedown', (e: Event) => {
+        e.stopPropagation()
+        const data: Chat = el.__data
+        if (globeRef.current) globeRef.current.pointOfView({ lat: data.lat, lng: data.lng, altitude: 1.8 }, 800)
+        onMarkerClick(data)
+      })
+      el.addEventListener('touchstart', (e: Event) => {
+        e.stopPropagation()
+        const data: Chat = el.__data
+        if (globeRef.current) globeRef.current.pointOfView({ lat: data.lat, lng: data.lng, altitude: 1.8 }, 800)
+        onMarkerClick(data)
+      }, { passive: false })
+
+      elementCacheRef.current.set(String(item.id), el)
+    }
+
+    // Always update the data reference so click handlers get latest state
+    el.__data = item
 
     const stato = calcolaStatoVitale(item)
-    if (stato === 'archivio') return document.createElement('div') // Hidden
+    if (stato === 'archivio') {
+      el.style.display = 'none'
+      return el
+    }
+    el.style.display = ''
 
     const isSbiadita = stato === 'foglia_secca'
     const stile = STILI_STATO[stato]
-    
-    const bgColor = isDark 
-      ? 'rgba(255, 255, 255, 0.95)' 
-      : 'rgba(24, 24, 27, 0.95)'
-    
+    const bgColor = isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(24, 24, 27, 0.95)'
     const textColor = isDark ? 'black' : 'white'
-    const shadow = isDark 
-      ? '0 8px 32px rgba(255,255,255,0.2)' 
-      : '0 8px 32px rgba(0,0,0,0.3)'
+    const shadow = isDark ? '0 8px 32px rgba(255,255,255,0.2)' : '0 8px 32px rgba(0,0,0,0.3)'
 
     el.innerHTML = `
       <div 
@@ -118,25 +153,6 @@ export function MapGlobe({
         <span>${item.risposte_count > 0 ? item.risposte_count : 'New'}</span>
       </div>`
 
-    el.addEventListener('mousedown', (e) => { 
-      e.stopPropagation()
-      // Smoothly rotate the globe to center on this marker
-      if (globeRef.current) {
-        globeRef.current.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.8 }, 800)
-      }
-      onMarkerClick(item)
-    })
-    
-    // Support touch devices
-    el.addEventListener('touchstart', (e) => {
-      e.stopPropagation()
-      // Smoothly rotate the globe to center on this marker
-      if (globeRef.current) {
-        globeRef.current.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.8 }, 800)
-      }
-      onMarkerClick(item)
-    }, { passive: false })
-    
     return el
   }
 
