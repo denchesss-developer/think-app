@@ -631,19 +631,50 @@ export default function ThinkApp() {
     const midLat = (currentLat + mieCoord.lat) / 2
     const midLng = (currentLng + mieCoord.lng) / 2
 
-    // Reverse geocode the midpoint to get the actual geographic region name
+    // Reverse geocode the midpoint — with fallback zoom and ocean detection
+    const getOceanName = (lat: number, lng: number): string => {
+      // Mediterranean Sea
+      if (lat >= 30 && lat <= 46 && lng >= -5 && lng <= 37) return 'Mar Mediterraneo'
+      // Atlantic Ocean
+      if (lng >= -80 && lng <= 20 && lat >= -60 && lat <= 70) return 'Oceano Atlantico'
+      // Pacific Ocean (west)
+      if (lng >= 100 || lng <= -60) return 'Oceano Pacifico'
+      // Indian Ocean
+      if (lat >= -60 && lat <= 30 && lng >= 20 && lng <= 100) return 'Oceano Indiano'
+      // Arctic
+      if (lat >= 70) return 'Oceano Artico'
+      return 'In Alto Mare'
+    }
+
     let midRegione = mieCoord.regione
     try {
-      const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${midLat}&lon=${midLng}&format=json&zoom=5`,
-        { headers: { 'Accept-Language': 'it' } }
-      )
-      if (geoRes.ok) {
-        const geoData = await geoRes.json()
-        midRegione = geoData.address?.state || geoData.address?.county || geoData.address?.country || mieCoord.regione
+      const geoFetch = async (zoom: number) => {
+        const r = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${midLat}&lon=${midLng}&format=json&zoom=${zoom}`,
+          { headers: { 'Accept-Language': 'it' } }
+        )
+        if (!r.ok) return null
+        const j = await r.json()
+        return j?.error ? null : j
+      }
+
+      // Try regional zoom first (land regions)
+      const geo5 = await geoFetch(5)
+      const land = geo5?.address?.state || geo5?.address?.county || geo5?.address?.country
+      if (land) {
+        midRegione = land
+      } else {
+        // Fallback: wider zoom to catch seas
+        const geo3 = await geoFetch(3)
+        midRegione = geo3?.address?.sea
+          || geo3?.address?.ocean
+          || geo3?.address?.body_of_water
+          || geo3?.address?.country
+          || geo3?.name
+          || getOceanName(midLat, midLng) // last resort: coordinate-based ocean name
       }
     } catch {
-      // fallback: keep replier's region
+      midRegione = getOceanName(midLat, midLng)
     }
 
     await supabase.from('chats')
