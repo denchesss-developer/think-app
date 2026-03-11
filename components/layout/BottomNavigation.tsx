@@ -1,46 +1,93 @@
 import React from "react"
-import { MapPin, Plus, User, Compass, Bookmark } from "lucide-react"
+import { MapPin, Plus, User, Compass, Bookmark, Send } from "lucide-react"
 
 interface BottomNavigationProps {
   activeTab: string
   onTabChange: (tab: string) => void
   onCompose: () => void
+  isChatMode?: boolean
+  nuovaRisposta?: string
+  setNuovaRisposta?: (v: string) => void
+  onInviaRisposta?: () => void
 }
 
-export function BottomNavigation({ activeTab, onTabChange, onCompose }: BottomNavigationProps) {
+export function BottomNavigation({ 
+  activeTab, 
+  onTabChange, 
+  onCompose,
+  isChatMode = false,
+  nuovaRisposta = "",
+  setNuovaRisposta,
+  onInviaRisposta
+}: BottomNavigationProps) {
   return (
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] lg:hidden flex items-center justify-center pointer-events-none w-full px-4">
-      <div className="glass-panel rounded-[2rem] px-4 py-2 flex items-center gap-1.5 pointer-events-auto backdrop-blur-xl shadow-2xl">
+      <div 
+        className={`glass-panel rounded-[2rem] py-2 flex items-center gap-1.5 pointer-events-auto backdrop-blur-xl shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden
+        ${isChatMode ? "w-full px-2" : "px-4 w-auto"}
+        `}
+      >
         <NavButton
           icon={<MapPin />}
           isActive={activeTab === "home"}
           onClick={() => onTabChange("home")}
+          hidden={isChatMode}
         />
         <NavButton
           icon={<Compass />}
           isActive={activeTab === "esplora"}
           onClick={() => onTabChange("esplora")}
+          hidden={isChatMode}
         />
 
-        {/* Compose Button */}
+        {/* Morphing Input Field */}
+        <div 
+          className={`transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center ${
+            isChatMode ? "flex-1 opacity-100 ml-2" : "w-0 opacity-0 overflow-hidden"
+          }`}
+        >
+          <input
+            type="text"
+            placeholder="Rispondi..."
+            value={nuovaRisposta}
+            onChange={(e) => setNuovaRisposta?.(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onInviaRisposta?.()}
+            className="w-full bg-transparent border-none outline-none text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] text-[15px] px-2"
+          />
+        </div>
+
+        {/* Morphing Central Button */}
         <button
           type="button"
-          onClick={onCompose}
-          className="mx-3 h-[52px] w-[52px] rounded-full bg-[var(--color-brand-blue)] text-white flex items-center justify-center shadow-[0_4px_24px_rgba(59,130,246,0.6)] transition-transform active:scale-90"
+          onClick={isChatMode ? onInviaRisposta : onCompose}
+          className={`h-[52px] w-[52px] flex-shrink-0 rounded-full bg-[var(--color-brand-blue)] text-white flex items-center justify-center shadow-[0_4px_24px_rgba(59,130,246,0.6)] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-90
+            ${isChatMode ? "ml-1 mr-1 rotate-0" : "mx-3 rotate-90"}
+          `}
         >
-          <Plus strokeWidth={3} className="w-6 h-6" />
+          <div className="relative w-6 h-6 flex items-center justify-center">
+            <Plus 
+              strokeWidth={3} 
+              className={`absolute transition-all duration-400 ${isChatMode ? "opacity-0 scale-50 rotate-90" : "opacity-100 scale-100 rotate-0"}`} 
+            />
+            <Send 
+              strokeWidth={2.5} 
+              className={`absolute transition-all duration-400 ${isChatMode ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"} w-5 h-5 ml-0.5`} 
+            />
+          </div>
         </button>
 
         <NavButton
           icon={<Bookmark />}
           isActive={activeTab === "attivita"}
           onClick={() => onTabChange("attivita")}
+          hidden={isChatMode}
         />
 
         <NavButton
           icon={<User />}
           isActive={activeTab === "account"}
           onClick={() => onTabChange("account")}
+          hidden={isChatMode}
         />
       </div>
     </div>
@@ -51,16 +98,20 @@ function NavButton({
   icon,
   isActive,
   onClick,
+  hidden
 }: {
   icon: React.ReactElement
   isActive: boolean
   onClick: () => void
+  hidden?: boolean
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`relative flex items-center justify-center w-[52px] h-[52px] rounded-2xl transition-all duration-300 ${
+      className={`relative flex items-center justify-center rounded-2xl transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${
+        hidden ? "w-0 h-[52px] opacity-0 mx-0 px-0 pointer-events-none scale-50" : "w-[52px] h-[52px] opacity-100 scale-100 mx-0.5"
+      } ${
         isActive
           ? "bg-[var(--color-brand-blue)]/10 text-[var(--color-text-main)] shadow-inner"
           : "text-[var(--color-text-faint)] hover:text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]"

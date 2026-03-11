@@ -1047,9 +1047,20 @@ export default function ThinkApp() {
 
       {/* MOBILE HEADER: Logo + Nickname */}
       <div className="fixed top-0 left-0 right-0 z-[45] lg:hidden flex items-center justify-between px-5 py-3 pointer-events-none">
-        <h1 className="text-xl font-black tracking-tight text-gradient">
-          Think.
-        </h1>
+        <div className="flex items-center gap-3">
+          {mode === "chat" && (
+            <button
+              type="button"
+              onClick={() => { chiudiChat(); setMode("feed"); setActiveTab("home") }}
+              className="pointer-events-auto text-[var(--color-text-main)] hover:text-[var(--color-text-muted)] transition-colors"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+            </button>
+          )}
+          <h1 className="text-xl font-black tracking-tight text-gradient pointer-events-auto">
+            Think.
+          </h1>
+        </div>
         <div className="flex items-center gap-2 pointer-events-auto">
           <span className="text-[12px] font-bold text-[var(--color-text-muted)] tracking-wide">
             {mioNickname || 'Anonimo'}
@@ -1210,6 +1221,10 @@ export default function ThinkApp() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         onCompose={() => setMostraModaleComponi(true)}
+        isChatMode={mode === "chat"}
+        nuovaRisposta={nuovaRisposta}
+        setNuovaRisposta={setNuovaRisposta}
+        onInviaRisposta={inviaRisposta}
       />
 
       {/* MOBILE SHEET PANELS */}
@@ -1220,25 +1235,7 @@ export default function ThinkApp() {
           setActiveTab("home")
         }}
         initialPosition="partial"
-        footer={mode === "chat" ? (
-          <div className="flex relative items-center gap-2">
-            <Input
-              inputMode="text"
-              placeholder="Rispondi..."
-              value={nuovaRisposta}
-              onChange={(e) => setNuovaRisposta(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && inviaRisposta()}
-              className="pr-14"
-            />
-            <Button
-              onClick={inviaRisposta}
-              size="icon"
-              className="absolute right-1 top-1 bottom-1 w-11 h-11 rounded-xl m-0 flex items-center justify-center bg-[var(--color-brand-blue)] text-white"
-            >
-              <Send className="w-4 h-4 ml-0.5" />
-            </Button>
-          </div>
-        ) : undefined}
+        footer={undefined}
       >
         <div className="pt-0 pb-2">
           {mode === "feed" && renderFeedContent()}
