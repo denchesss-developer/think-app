@@ -48,6 +48,7 @@ interface MapGlobeProps {
   cittaTest: { id: string, nome: string, lat: number | null, lng: number | null, regione: string }[]
   setGpsSimulato: (v: string) => void
   onMarkerClick: (chat: Chat) => void
+  arcsViaggio?: { id: string, startLat: number, startLng: number, endLat: number, endLng: number }[]
 }
 
 export function MapGlobe({
@@ -58,7 +59,8 @@ export function MapGlobe({
   gpsSimulato,
   cittaTest,
   setGpsSimulato,
-  onMarkerClick
+  onMarkerClick,
+  arcsViaggio = []
 }: MapGlobeProps) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -193,7 +195,20 @@ export function MapGlobe({
         htmlLat="lat" 
         htmlLng="lng" 
         htmlElement={(d: object) => disegnaMarkerGlobo(d as Chat)}
-        htmlTransitionDuration={8000}
+        htmlTransitionDuration={0}
+
+        /* Travel arcs: animated path when a thought moves to a new position */
+        arcsData={arcsViaggio}
+        arcStartLat="startLat"
+        arcStartLng="startLng"
+        arcEndLat="endLat"
+        arcEndLng="endLng"
+        arcColor={() => isDark ? ['rgba(96,165,250,0)', 'rgba(96,165,250,0.9)', 'rgba(96,165,250,0)'] : ['rgba(37,99,235,0)', 'rgba(37,99,235,0.8)', 'rgba(37,99,235,0)']}
+        arcDashLength={0.4}
+        arcDashGap={0.15}
+        arcDashAnimateTime={12000}
+        arcStroke={0.5}
+        arcAltitudeAutoScale={0.4}
       />
 
       <div className="absolute top-6 right-6 z-10 hidden sm:flex items-center glass-panel p-2 rounded-xl text-[var(--color-text-muted)] text-xs font-semibold shadow-lg backdrop-blur-3xl">

@@ -66,6 +66,7 @@ export default function ThinkApp() {
 
   const [chats, setChats] = useState<Chat[]>([])
   const [countries, setCountries] = useState<{ features: Record<string, unknown>[] }>({ features: [] })
+  const [arcsViaggio, setArcsViaggio] = useState<{ id: string, startLat: number, startLng: number, endLat: number, endLng: number }[]>([])
 
   const [chatAttiva, setChatAttiva] = useState<Chat | null>(null)
   const [risposte, setRisposte] = useState<Risposta[]>([])
@@ -293,10 +294,18 @@ export default function ThinkApp() {
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chats' }, (payload) => {
-        // Updated chat: update just this item in-place so react-globe.gl can smoothly
-        // transition (CSS htmlTransitionDuration) instead of teleporting
         if (payload.new) {
-          setChats((prev) => prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } as Chat : c))
+          setChats((prev) => {
+            const old = prev.find(c => c.id === payload.new.id)
+            // If position changed, spawn a travel arc from old to new position
+            if (old && (old.lat !== payload.new.lat || old.lng !== payload.new.lng)) {
+              const arc = { id: `${payload.new.id}-${Date.now()}`, startLat: old.lat!, startLng: old.lng!, endLat: payload.new.lat, endLng: payload.new.lng }
+              setArcsViaggio(a => [...a, arc])
+              // Auto-remove arc after 12 seconds
+              setTimeout(() => setArcsViaggio(a => a.filter(x => x.id !== arc.id)), 12000)
+            }
+            return prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } as Chat : c)
+          })
         }
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chats' }, (payload) => {
@@ -1044,6 +1053,7 @@ export default function ThinkApp() {
         cittaTest={CITTA_TEST}
         setGpsSimulato={setGpsSimulato}
         onMarkerClick={apriChat}
+        arcsViaggio={arcsViaggio}
       />
 
       {/* DESKTOP SIDEBAR */}
