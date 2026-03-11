@@ -297,12 +297,19 @@ export default function ThinkApp() {
         if (payload.new) {
           setChats((prev) => {
             const old = prev.find(c => c.id === payload.new.id)
-            // If position changed, spawn a travel arc from old to new position
             if (old && (old.lat !== payload.new.lat || old.lng !== payload.new.lng)) {
               const arc = { id: `${payload.new.id}-${Date.now()}`, startLat: old.lat!, startLng: old.lng!, endLat: payload.new.lat, endLng: payload.new.lng }
               setArcsViaggio(a => [...a, arc])
-              // Auto-remove arc after 12 seconds
-              setTimeout(() => setArcsViaggio(a => a.filter(x => x.id !== arc.id)), 12000)
+              // Arc stays visible for 30 seconds
+              setTimeout(() => setArcsViaggio(a => a.filter(x => x.id !== arc.id)), 30000)
+            }
+            // Mutate the existing object in-place to preserve object identity.
+            // react-globe.gl tracks HTML elements by object reference, so a new
+            // object (spread) would create a new DOM element (instant teleport).
+            // Mutating the SAME object lets the library apply CSS transitions.
+            if (old) {
+              Object.assign(old, payload.new)
+              return [...prev] // new array, same object references
             }
             return prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } as Chat : c)
           })

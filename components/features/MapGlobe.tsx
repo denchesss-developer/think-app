@@ -195,7 +195,7 @@ export function MapGlobe({
         htmlLat="lat" 
         htmlLng="lng" 
         htmlElement={(d: object) => disegnaMarkerGlobo(d as Chat)}
-        htmlTransitionDuration={0}
+        htmlTransitionDuration={8000}
 
         /* Travel arcs: animated path when a thought moves to a new position */
         arcsData={arcsViaggio}
@@ -206,7 +206,7 @@ export function MapGlobe({
         arcColor={() => isDark ? ['rgba(96,165,250,0)', 'rgba(96,165,250,0.9)', 'rgba(96,165,250,0)'] : ['rgba(37,99,235,0)', 'rgba(37,99,235,0.8)', 'rgba(37,99,235,0)']}
         arcDashLength={0.4}
         arcDashGap={0.15}
-        arcDashAnimateTime={12000}
+        arcDashAnimateTime={30000}
         arcStroke={0.5}
         arcAltitudeAutoScale={0.4}
       />
