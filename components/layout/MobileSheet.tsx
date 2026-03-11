@@ -60,14 +60,9 @@ export function MobileSheet({
   }, [initialPosition])
 
   const close = useCallback(() => {
-    setPosition("hidden")
-    setDragDelta(0)
-    // After animation completes, call onClose to update parent state
-    setTimeout(() => {
-      setMounted(false)
-      prevOpen.current = false
-      onClose()
-    }, 500)
+    // Alert parent immediately so related parallel animations (like BottomNav morphing) start.
+    // The parent will change isOpen to false, triggering our useEffect which handles the unmount delay.
+    onClose()
   }, [onClose])
 
   // Drag gesture on the handle

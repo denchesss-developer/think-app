@@ -61,7 +61,7 @@ export function BottomNavigation({
           type="button"
           onClick={isChatMode ? onInviaRisposta : onCompose}
           className={`flex-shrink-0 bg-[var(--color-brand-blue)] text-white flex items-center justify-center shadow-[0_4px_24px_rgba(59,130,246,0.6)] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95
-            ${isChatMode ? "h-[44px] w-[44px] rounded-full ml-1 mr-2 rotate-0" : "h-[52px] w-[52px] rounded-full mx-3 rotate-90"}
+            ${isChatMode ? "h-[46px] w-[46px] rounded-full ml-1 mr-2 flex-shrink-0 rotate-0" : "h-[52px] w-[52px] rounded-full mx-3 flex-shrink-0 rotate-90"}
           `}
         >
           <div className="relative w-full h-full flex items-center justify-center">
