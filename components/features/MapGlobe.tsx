@@ -120,7 +120,8 @@ export function MapGlobe({
 
     elCache.current.forEach((el, id) => {
       const pos = markerLatLng.current.get(id)
-      if (!pos || el.style.display === 'none') return
+      // Skip permanently hidden (archived) markers
+      if (!pos || el.dataset.archived === 'true') return
 
       const latR = (pos.lat * Math.PI) / 180
       const lngR = (pos.lng * Math.PI) / 180
@@ -131,18 +132,22 @@ export function MapGlobe({
 
       const dot = mx * camPos.x + my * camPos.y + mz * camPos.z
 
-      // Fade zone: from dot=0.12 (fully visible) down to dot=0.0 (edge of fade),
-      // then hidden for dot<0.
-      const FADE_START = 0.12
+      // Wide fade zone (~17°): fully visible at dot>=0.3, fully hidden at dot<=0
+      const FADE_START = 0.3
       const horizonFactor = dot <= 0 ? 0 : Math.min(1, dot / FADE_START)
 
-      // Apply to inner div, multiplied by the marker's stored base opacity
-      // (e.g. 0.3 for foglia_secca so it stays dim even when facing the camera)
+      // Read base opacity (0.3 for foglia_secca, 1 otherwise)
       const inner = el.firstElementChild as HTMLElement | null
-      if (inner) {
-        const baseOpacity = parseFloat(inner.dataset.baseOpacity ?? '1')
-        inner.style.opacity = String(horizonFactor * baseOpacity)
-      }
+      const baseOpacity = parseFloat(inner?.dataset.baseOpacity ?? '1')
+      const finalOpacity = horizonFactor * baseOpacity
+
+      // ── Key fix: override the library's instant display:none at the horizon ──
+      // Force the element visible and control visibility purely via opacity.
+      el.style.display = ''
+      el.style.opacity = String(finalOpacity)
+      // Disable pointer events when fully transparent so invisible markers
+      // don't intercept clicks.
+      el.style.pointerEvents = finalOpacity < 0.05 ? 'none' : 'auto'
     })
 
     horizonRafRef.current = requestAnimationFrame(horizonLoop)
@@ -263,7 +268,12 @@ export function MapGlobe({
     markerLatLng.current.set(String(item.id), { lat: item.lat ?? 0, lng: item.lng ?? 0 })
 
     const stato = calcolaStatoVitale(item)
-    if (stato === 'archivio') { el.style.display = 'none'; return el }
+    if (stato === 'archivio') {
+      el.dataset.archived = 'true'
+      el.style.display = 'none'
+      return el
+    }
+    el.dataset.archived = 'false'
     el.style.display = ''
 
     const isSbiadita = stato === 'foglia_secca'
