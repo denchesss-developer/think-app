@@ -66,16 +66,10 @@ export function MapGlobe({
 
   useEffect(() => {
     if (globeRef.current) {
-      const citta = cittaTest.find(c => c.id === gpsSimulato)
-      if (citta && citta.lat !== null && citta.lng !== null) {
-        // Smooth transition to the selected city's coordinates
-        globeRef.current.pointOfView({ lat: citta.lat, lng: citta.lng, altitude: 2.0 }, 1000)
-      } else {
-        // De-zoom and center the globe (Default)
-        globeRef.current.pointOfView({ lat: 30, lng: 10, altitude: 2.5 }, 1000)
-      }
+      // Initial center: Europe/Mediterranean
+      globeRef.current.pointOfView({ lat: 30, lng: 10, altitude: 2.5 }, 0)
     }
-  }, [gpsSimulato, cittaTest])
+  }, [])
 
   const disegnaMarkerGlobo = (item: Chat) => {
     const el = document.createElement('div')
@@ -124,12 +118,20 @@ export function MapGlobe({
 
     el.addEventListener('mousedown', (e) => { 
       e.stopPropagation()
+      // Smoothly rotate the globe to center on this marker
+      if (globeRef.current) {
+        globeRef.current.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.8 }, 800)
+      }
       onMarkerClick(item)
     })
     
     // Support touch devices
     el.addEventListener('touchstart', (e) => {
       e.stopPropagation()
+      // Smoothly rotate the globe to center on this marker
+      if (globeRef.current) {
+        globeRef.current.pointOfView({ lat: item.lat, lng: item.lng, altitude: 1.8 }, 800)
+      }
       onMarkerClick(item)
     }, { passive: false })
     
