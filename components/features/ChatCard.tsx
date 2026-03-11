@@ -63,9 +63,7 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
           </span>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-hover)] text-[var(--color-text-muted)]">
             {hasReplies ? <Plane className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" /> : <MapPin className="w-3.5 h-3.5" />}
-            <span className="text-[10px] font-bold tracking-widest uppercase">
-              {hasReplies ? 'In viaggio' : chat.regione}
-            </span>
+            <span className="text-[10px] font-bold tracking-widest uppercase">{chat.regione}</span>
           </div>
         </div>
         

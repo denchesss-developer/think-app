@@ -626,17 +626,31 @@ export default function ThinkApp() {
     const newCount = (chatAttiva.risposte_count ?? 0) + 1
 
     // Move to midpoint between current position and replier's position
-    // This creates gradual, organic "wandering" movement across the globe
     const currentLat = chatAttiva.lat ?? mieCoord.lat
     const currentLng = chatAttiva.lng ?? mieCoord.lng
     const midLat = (currentLat + mieCoord.lat) / 2
     const midLng = (currentLng + mieCoord.lng) / 2
 
+    // Reverse geocode the midpoint to get the actual geographic region name
+    let midRegione = mieCoord.regione
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${midLat}&lon=${midLng}&format=json&zoom=5`,
+        { headers: { 'Accept-Language': 'it' } }
+      )
+      if (geoRes.ok) {
+        const geoData = await geoRes.json()
+        midRegione = geoData.address?.state || geoData.address?.county || geoData.address?.country || mieCoord.regione
+      }
+    } catch {
+      // fallback: keep replier's region
+    }
+
     await supabase.from('chats')
-      .update({ lat: midLat, lng: midLng, regione: mieCoord.regione, risposte_count: newCount, ultima_attivita: new Date().toISOString() })
+      .update({ lat: midLat, lng: midLng, regione: midRegione, risposte_count: newCount, ultima_attivita: new Date().toISOString() })
       .eq('id', chatAttiva.id)
 
-    setChatAttiva({ ...chatAttiva, lat: midLat, lng: midLng, regione: mieCoord.regione, risposte_count: newCount })
+    setChatAttiva({ ...chatAttiva, lat: midLat, lng: midLng, regione: midRegione, risposte_count: newCount })
   }
 
   async function toggleBookmark(chat: Chat) {
