@@ -45,7 +45,7 @@ interface MapGlobeProps {
   sidebarOpen: boolean
   isDark: boolean
   gpsSimulato: string
-  cittaTest: { id: string, nome: string }[]
+  cittaTest: { id: string, nome: string, lat: number | null, lng: number | null, regione: string }[]
   setGpsSimulato: (v: string) => void
   onMarkerClick: (chat: Chat) => void
 }
