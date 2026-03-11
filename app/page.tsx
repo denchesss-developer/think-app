@@ -833,25 +833,22 @@ export default function ThinkApp() {
               className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all border ${
                 filtroAttivo === 'Archivio'
                   ? "bg-[var(--color-brand-blue)] text-white shadow-[0_4px_15px_rgba(59,130,246,0.3)] border-transparent"
-                  : "bg-[var(--color-bg-hover)] text-[var(--color-text-main)] hover:bg-[var(--color-border-subtle)] border-transparent"
+                  : "bg-transparent text-[var(--color-text-muted)] border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-main)]"
               }`}
             >
               <FolderArchive className="w-5 h-5 flex-shrink-0" />
               <div className="flex flex-col items-start flex-1 text-left">
                 <span className="font-bold text-[15px]">Archiviati</span>
-                <span className="text-[12px] opacity-80 font-medium">Sfoglia pensieri passati e conclusi</span>
+                <span className="text-[12px] opacity-80 font-medium whitespace-nowrap overflow-hidden text-ellipsis">Sfoglia pensieri passati e conclusi</span>
               </div>
             </button>
-
-            {/* Separatore */}
-            <div className="w-full h-px bg-[var(--color-border-subtle)] opacity-50 my-1" />
 
             {/* Livello Secondario (Ordinamento) */}
             <div 
               className="flex flex-row flex-nowrap overflow-x-auto gap-2 scrollbar-hide pb-1 pt-1"
               style={{
-                maskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
+                maskImage: "linear-gradient(to right, black 0%, black 90%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to right, black 0%, black 90%, transparent 100%)",
                 paddingLeft: '4px',
                 paddingRight: '4px',
                 marginLeft: '-4px',
