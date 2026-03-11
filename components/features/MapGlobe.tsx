@@ -88,8 +88,11 @@ export function MapGlobe({
   const elCache     = useRef<Map<string, any>>(new Map())
   const animMap     = useRef<Map<string, AnimState>>(new Map())
   const rafRef      = useRef<number | null>(null)
+  const horizonRafRef = useRef<number | null>(null)
   // 'display' positions that we feed to the Globe (lat/lng may differ from DB during animation)
   const displayRef  = useRef<Map<string, { lat: number, lng: number }>>(new Map())
+  // Per-marker lat/lng used by the horizon loop (stable reference)
+  const markerLatLng = useRef<Map<string, { lat: number, lng: number }>>(new Map())
 
   // Initial camera
   useEffect(() => {
@@ -97,6 +100,62 @@ export function MapGlobe({
       globeRef.current.pointOfView({ lat: 30, lng: 10, altitude: 2.5 }, 0)
     }
   }, [])
+
+  // ─── Horizon Fade Loop ──────────────────────────────────────────────────────
+  // Converts each marker's lat/lng to a unit 3D vector, then computes the dot
+  // product against the camera view direction. When dot→0 (horizon) the marker
+  // fades smoothly out; when dot<0 (back-face) it is completely hidden.
+  const horizonLoop = useCallback(() => {
+    if (!globeRef.current) {
+      horizonRafRef.current = requestAnimationFrame(horizonLoop)
+      return
+    }
+    const camera = globeRef.current.camera?.() as THREE.Camera | undefined
+    if (!camera) {
+      horizonRafRef.current = requestAnimationFrame(horizonLoop)
+      return
+    }
+
+    const camPos = camera.position.clone().normalize()
+
+    elCache.current.forEach((el, id) => {
+      const pos = markerLatLng.current.get(id)
+      if (!pos || el.style.display === 'none') return
+
+      const latR = (pos.lat * Math.PI) / 180
+      const lngR = (pos.lng * Math.PI) / 180
+      // Standard spherical → Cartesian (matches Three.js Y-up globe convention)
+      const mx = Math.cos(latR) * Math.sin(lngR)
+      const my = Math.sin(latR)
+      const mz = Math.cos(latR) * Math.cos(lngR)
+
+      const dot = mx * camPos.x + my * camPos.y + mz * camPos.z
+
+      // Fade zone: from dot=0.12 (fully visible) down to dot=0.0 (edge of fade),
+      // then hidden for dot<0.
+      const FADE_START = 0.12
+      const horizonFactor = dot <= 0 ? 0 : Math.min(1, dot / FADE_START)
+
+      // Apply to inner div, multiplied by the marker's stored base opacity
+      // (e.g. 0.3 for foglia_secca so it stays dim even when facing the camera)
+      const inner = el.firstElementChild as HTMLElement | null
+      if (inner) {
+        const baseOpacity = parseFloat(inner.dataset.baseOpacity ?? '1')
+        inner.style.opacity = String(horizonFactor * baseOpacity)
+      }
+    })
+
+    horizonRafRef.current = requestAnimationFrame(horizonLoop)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Start / stop the horizon loop
+  useEffect(() => {
+    horizonRafRef.current = requestAnimationFrame(horizonLoop)
+    return () => {
+      if (horizonRafRef.current) cancelAnimationFrame(horizonRafRef.current)
+    }
+  }, [horizonLoop])
 
   // Detect position changes and start RAF animation
   useEffect(() => {
@@ -200,6 +259,8 @@ export function MapGlobe({
     }
 
     el.__data = item
+    // Keep lat/lng current for the horizon-fade RAF loop
+    markerLatLng.current.set(String(item.id), { lat: item.lat ?? 0, lng: item.lng ?? 0 })
 
     const stato = calcolaStatoVitale(item)
     if (stato === 'archivio') { el.style.display = 'none'; return el }
@@ -211,8 +272,11 @@ export function MapGlobe({
     const textColor = isDark ? 'black' : 'white'
     const shadow    = isDark ? '0 8px 32px rgba(255,255,255,0.2)' : '0 8px 32px rgba(0,0,0,0.3)'
 
+    const baseOpacity = isSbiadita ? 0.3 : 1
+
     el.innerHTML = `
       <div 
+        data-base-opacity="${baseOpacity}"
         style="
           background: ${bgColor};
           padding: 6px 14px; 
@@ -223,14 +287,14 @@ export function MapGlobe({
           font-weight: 800; 
           cursor: pointer; 
           pointer-events: auto;
-          opacity: ${isSbiadita ? '0.3' : '1'};
+          opacity: ${baseOpacity};
           transform: scale(${stile.globoScale}); 
           backdrop-filter: blur(10px);
           border: 1px solid rgba(128,128,128,0.2);
           display: flex;
           align-items: center;
           gap: 6px;
-          transition: transform 0.3s ease, opacity 0.3s ease;
+          transition: transform 0.3s ease;
       ">
         <span style="font-size: 1.1em; opacity: 0.9; transform: translateY(-1px); display: inline-block;">${stile.icona}</span> 
         <span>${item.risposte_count > 0 ? item.risposte_count : 'New'}</span>
