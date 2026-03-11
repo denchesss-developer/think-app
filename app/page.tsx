@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from '@/lib/supabaseClient'
 import { containsBannedWord } from "@/lib/bannedWords"
-import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane, Share2 } from "lucide-react"
+import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane, Share2, ChevronDown } from "lucide-react"
 
 // Layout Components
 import { Sidebar } from "@/components/layout/Sidebar"
@@ -841,7 +841,16 @@ export default function ThinkApp() {
     if (!chatAttiva) return null
     const stato = calcolaStatoVitale(chatAttiva)
     return (
-      <div className="fade-in-up sm:animate-in sm:duration-500 pb-6">
+      <div className="fade-in-up sm:animate-in sm:duration-500 pb-6 relative">
+        {/* Pulsante Chiudi per Mobile (Tendina) */}
+        <button
+          type="button"
+          onClick={() => { chiudiChat(); setActiveTab("home"); setMobileSheetOpen(false) }}
+          className="absolute right-0 -top-1 lg:hidden p-2 rounded-full text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)] transition-colors z-[60]"
+          title="Chiudi chat"
+        >
+          <ChevronDown className="w-5 h-5" />
+        </button>
 
         {/* Pensiero Originale — Hero Card */}
         <div className="relative rounded-3xl overflow-hidden mb-6">
@@ -1046,18 +1055,12 @@ export default function ThinkApp() {
     <div className="h-screen w-full relative overflow-hidden bg-[var(--color-bg-base)] text-[var(--color-text-main)] font-sans antialiased selection:bg-[var(--color-brand-blue)]/30 selection:text-white">
 
       {/* MOBILE HEADER: Logo + Nickname */}
-      <div className="fixed top-0 left-0 right-0 z-[45] lg:hidden flex items-center justify-between px-5 py-3 pointer-events-none">
+      <div 
+        className="fixed top-0 left-0 right-0 z-[45] lg:hidden flex items-center justify-between px-5 pb-3 pointer-events-none"
+        style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
+      >
         <div className="flex items-center gap-3">
-          {mode === "chat" && (
-            <button
-              type="button"
-              onClick={() => { chiudiChat(); setMode("feed"); setActiveTab("home") }}
-              className="pointer-events-auto text-[var(--color-text-main)] hover:text-[var(--color-text-muted)] transition-colors"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-            </button>
-          )}
-          <h1 className="text-xl font-black tracking-tight text-gradient pointer-events-auto">
+          <h1 className="text-xl font-black tracking-tight text-gradient pointer-events-auto drop-shadow-md">
             Think.
           </h1>
         </div>
@@ -1233,6 +1236,7 @@ export default function ThinkApp() {
         onClose={() => {
           setMobileSheetOpen(false)
           setActiveTab("home")
+          setMode("feed") // resetta lo stato così che la Nav Bar torni indietro
         }}
         initialPosition="partial"
         footer={undefined}

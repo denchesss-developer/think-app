@@ -23,8 +23,8 @@ export function BottomNavigation({
   return (
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] lg:hidden flex items-center justify-center pointer-events-none w-full px-4">
       <div 
-        className={`glass-panel rounded-[2rem] py-2 flex items-center gap-1.5 pointer-events-auto backdrop-blur-xl shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden
-        ${isChatMode ? "w-full px-2" : "px-4 w-auto"}
+        className={`glass-panel rounded-[2rem] flex items-center gap-1.5 pointer-events-auto backdrop-blur-xl shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden
+        ${isChatMode ? "w-full pl-4 pr-1.5 py-1.5" : "px-4 py-2 w-auto"}
         `}
       >
         <NavButton
@@ -60,18 +60,18 @@ export function BottomNavigation({
         <button
           type="button"
           onClick={isChatMode ? onInviaRisposta : onCompose}
-          className={`h-[52px] w-[52px] flex-shrink-0 rounded-full bg-[var(--color-brand-blue)] text-white flex items-center justify-center shadow-[0_4px_24px_rgba(59,130,246,0.6)] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-90
-            ${isChatMode ? "ml-1 mr-1 rotate-0" : "mx-3 rotate-90"}
+          className={`flex-shrink-0 bg-[var(--color-brand-blue)] text-white flex items-center justify-center shadow-[0_4px_24px_rgba(59,130,246,0.6)] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95
+            ${isChatMode ? "h-[56px] w-[56px] rounded-xl rounded-r-[1.75rem] ml-1 mr-0 rotate-0" : "h-[52px] w-[52px] rounded-full mx-3 rotate-90"}
           `}
         >
-          <div className="relative w-6 h-6 flex items-center justify-center">
+          <div className="relative w-full h-full flex items-center justify-center">
             <Plus 
               strokeWidth={3} 
-              className={`absolute transition-all duration-400 ${isChatMode ? "opacity-0 scale-50 rotate-90" : "opacity-100 scale-100 rotate-0"}`} 
+              className={`absolute transition-all duration-400 flex items-center justify-center ${isChatMode ? "opacity-0 scale-50 rotate-90" : "opacity-100 scale-100 rotate-0"} w-6 h-6`} 
             />
             <Send 
               strokeWidth={2.5} 
-              className={`absolute transition-all duration-400 ${isChatMode ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"} w-5 h-5 ml-0.5`} 
+              className={`absolute transition-all duration-400 flex items-center justify-center ${isChatMode ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"} w-5 h-5 ml-1`} 
             />
           </div>
         </button>
