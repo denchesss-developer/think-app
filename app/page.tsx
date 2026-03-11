@@ -25,10 +25,10 @@ import { Input } from "@/components/ui/Input"
 import { GlassPanel } from "@/components/ui/Glass"
 
 const FILTRI = [
-  { id: "Recenti", label: "Recenti", icon: <Clock className="w-4 h-4 mr-1.5 inline" /> },
-  { id: "Tendenze", label: "Tendenze", icon: <TrendingUp className="w-4 h-4 mr-1.5 inline" /> },
-  { id: "Vicini", label: "Vicini", icon: <MapPin className="w-4 h-4 mr-1.5 inline" /> },
-  { id: "Archivio", label: "Archivio", icon: <Archive className="w-4 h-4 mr-1.5 inline" /> }
+  { id: "Recenti", label: "Recenti", icon: <Clock className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
+  { id: "Tendenze", label: "Tendenze", icon: <TrendingUp className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
+  { id: "Vicini", label: "Vicini", icon: <MapPin className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
+  { id: "Archivio", label: "Archivio", icon: <Archive className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> }
 ]
 
 const CITTA_TEST = [
@@ -847,14 +847,24 @@ export default function ThinkApp() {
             <div className="w-full h-px bg-[var(--color-border-subtle)] opacity-50 my-1" />
 
             {/* Livello Secondario (Ordinamento) */}
-            <div className="flex flex-wrap gap-2">
+            <div 
+              className="flex flex-row flex-nowrap overflow-x-auto gap-2 scrollbar-hide pb-1 pt-1"
+              style={{
+                maskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
+                paddingLeft: '4px',
+                paddingRight: '4px',
+                marginLeft: '-4px',
+                marginRight: '-4px'
+              }}
+            >
               {FILTRI.filter(f => f.id !== 'Archivio').map((f) => (
                 <button
                   key={f.id}
                   onClick={() => { setFiltroAttivo(f.id); setMostraPannelloFiltri(false); }}
-                  className={`flex-1 min-w-[30%] py-2.5 px-3 rounded-xl flex items-center justify-center text-[13px] font-bold transition-all border whitespace-nowrap ${
+                  className={`flex-shrink-0 py-2.5 px-4 rounded-xl flex items-center justify-center text-[13px] font-bold transition-all border whitespace-nowrap ${
                     filtroAttivo === f.id
-                      ? "bg-[var(--color-text-main)] text-[var(--color-bg-main)] border-transparent shadow-[0_4px_15px_rgba(0,0,0,0.1)]"
+                      ? "bg-[var(--color-brand-blue)] text-white border-transparent shadow-[0_4px_15px_rgba(59,130,246,0.3)]"
                       : "bg-transparent text-[var(--color-text-muted)] border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-main)]"
                   }`}
                 >
