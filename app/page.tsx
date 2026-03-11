@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from '@/lib/supabaseClient'
 import { containsBannedWord } from "@/lib/bannedWords"
-import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane, Share2, ChevronDown } from "lucide-react"
+import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane, Share2, ChevronDown, SlidersHorizontal, FolderArchive } from "lucide-react"
 
 // Layout Components
 import { Sidebar } from "@/components/layout/Sidebar"
@@ -76,6 +76,7 @@ export default function ThinkApp() {
   const [gpsSimulato, setGpsSimulato] = useState('roma')
   const [filtroAttivo, setFiltroAttivo] = useState('Recenti')
   const [testoRicerca, setTestoRicerca] = useState('')
+  const [mostraPannelloFiltri, setMostraPannelloFiltri] = useState(false)
 
   // Modals state
   const [nuovoMessaggio, setNuovoMessaggio] = useState('')
@@ -796,28 +797,73 @@ export default function ThinkApp() {
           <h2 className="text-[28px] font-black tracking-tight text-center">Feed</h2>
           <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center">Pensieri dal mondo</p>
         </div>
-        <Input
-          icon={<Search className="w-4 h-4 text-[var(--color-text-faint)]" />}
-          placeholder="Cerca pensieri nel mondo..."
-          value={testoRicerca}
-          onChange={(e) => setTestoRicerca(e.target.value)}
-          className="mb-5 shadow-sm border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] h-12 rounded-2xl"
-        />
+        <div className="flex flex-row items-center gap-3 mb-4">
+          <div className="flex-1">
+            <Input
+              icon={<Search className="w-4 h-4 text-[var(--color-text-faint)]" />}
+              placeholder="Cerca pensieri nel mondo..."
+              value={testoRicerca}
+              onChange={(e) => setTestoRicerca(e.target.value)}
+              className="w-full shadow-sm border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] h-12 rounded-2xl"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setMostraPannelloFiltri(!mostraPannelloFiltri)}
+            className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border border-[var(--color-border-subtle)] shadow-sm transition-colors ${
+              mostraPannelloFiltri || filtroAttivo === 'Archivio'
+                ? "bg-[var(--color-brand-blue)] text-white border-transparent"
+                : "bg-[var(--color-bg-card)] text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)]"
+            }`}
+          >
+            <SlidersHorizontal className="w-5 h-5" />
+          </button>
+        </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-4 pt-1 scrollbar-hide" style={{ maskImage: "linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)", WebkitMaskImage: "-webkit-linear-gradient(left, transparent, black 16px, black calc(100% - 16px), transparent)", paddingLeft: '16px', paddingRight: '16px', marginLeft: '-16px', marginRight: '-16px' }}>
-          {FILTRI.map((f) => (
+        {/* Animated Filter Panel */}
+        <div 
+          className={`overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+            mostraPannelloFiltri ? "max-h-[300px] opacity-100 mb-4" : "max-h-0 opacity-0 mb-0"
+          }`}
+        >
+          <div className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-border-subtle)] shadow-sm flex flex-col gap-3">
+            {/* Livello Primario (In evidenza) */}
             <button
-              key={f.id}
-              onClick={() => setFiltroAttivo(f.id)}
-              className={`px-5 py-2.5 rounded-full flex items-center justify-center text-[13px] font-bold transition-all whitespace-nowrap border ${filtroAttivo === f.id
-                ? "bg-[var(--color-brand-blue)] text-white border-transparent shadow-[0_4px_15px_rgba(59,130,246,0.3)]"
-                : "bg-[var(--color-bg-card)] text-[var(--color-text-main)] border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-hover)]"
-                }`}
+              onClick={() => { setFiltroAttivo('Archivio'); setMostraPannelloFiltri(false); }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all border ${
+                filtroAttivo === 'Archivio'
+                  ? "bg-[var(--color-brand-blue)] text-white shadow-[0_4px_15px_rgba(59,130,246,0.3)] border-transparent"
+                  : "bg-[var(--color-bg-hover)] text-[var(--color-text-main)] hover:bg-[var(--color-border-subtle)] border-transparent"
+              }`}
             >
-              {f.icon}
-              {f.label}
+              <FolderArchive className="w-5 h-5 flex-shrink-0" />
+              <div className="flex flex-col items-start flex-1 text-left">
+                <span className="font-bold text-[15px]">Archiviati</span>
+                <span className="text-[12px] opacity-80 font-medium">Sfoglia pensieri passati e conclusi</span>
+              </div>
             </button>
-          ))}
+
+            {/* Separatore */}
+            <div className="w-full h-px bg-[var(--color-border-subtle)] opacity-50 my-1" />
+
+            {/* Livello Secondario (Ordinamento) */}
+            <div className="flex flex-wrap gap-2">
+              {FILTRI.filter(f => f.id !== 'Archivio').map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => { setFiltroAttivo(f.id); setMostraPannelloFiltri(false); }}
+                  className={`flex-1 min-w-[30%] py-2.5 px-3 rounded-xl flex items-center justify-center text-[13px] font-bold transition-all border whitespace-nowrap ${
+                    filtroAttivo === f.id
+                      ? "bg-[var(--color-text-main)] text-[var(--color-bg-main)] border-transparent shadow-[0_4px_15px_rgba(0,0,0,0.1)]"
+                      : "bg-transparent text-[var(--color-text-muted)] border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-main)]"
+                  }`}
+                >
+                  {f.icon}
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center justify-between p-4 mt-2 mb-4 bg-transparent">
