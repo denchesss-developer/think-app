@@ -66,10 +66,16 @@ export function MapGlobe({
 
   useEffect(() => {
     if (globeRef.current) {
-      // De-zoom and center the globe
-      globeRef.current.pointOfView({ lat: 30, lng: 10, altitude: 2.5 }, 0)
+      const citta = cittaTest.find(c => c.id === gpsSimulato)
+      if (citta && citta.lat !== null && citta.lng !== null) {
+        // Smooth transition to the selected city's coordinates
+        globeRef.current.pointOfView({ lat: citta.lat, lng: citta.lng, altitude: 2.0 }, 1000)
+      } else {
+        // De-zoom and center the globe (Default)
+        globeRef.current.pointOfView({ lat: 30, lng: 10, altitude: 2.5 }, 1000)
+      }
     }
-  }, [])
+  }, [gpsSimulato, cittaTest])
 
   const disegnaMarkerGlobo = (item: Chat) => {
     const el = document.createElement('div')
