@@ -26,9 +26,17 @@ export const metadata: Metadata = {
   title: "Think",
   description: "A Global Map Note Experience",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: '/logo-nero.png', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/think-logo-white.png', sizes: '512x512', type: 'image/png' },
+    ],
+  },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Think"
   }
 };

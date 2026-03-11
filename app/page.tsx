@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from '@/lib/supabaseClient'
 import { containsBannedWord } from "@/lib/bannedWords"
-import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane } from "lucide-react"
+import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane, Share2 } from "lucide-react"
 
 // Layout Components
 import { Sidebar } from "@/components/layout/Sidebar"
@@ -874,6 +874,22 @@ export default function ThinkApp() {
                   title="Segnala"
                 >
                   <Flag className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const url = `${window.location.origin}?thought=${chatAttiva.id}`
+                    const text = `"${chatAttiva.titolo}" — da ${chatAttiva.regione || 'Think'}`
+                    if (navigator.share) {
+                      await navigator.share({ title: 'Think', text, url }).catch(() => {})
+                    } else {
+                      await navigator.clipboard.writeText(`${text}\n${url}`)
+                    }
+                  }}
+                  className="p-2 rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors text-[var(--color-text-faint)] hover:text-[var(--color-brand-blue)]"
+                  title="Condividi"
+                >
+                  <Share2 className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
