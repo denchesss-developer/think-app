@@ -3,7 +3,7 @@
 import React from "react"
 import { Pencil, MessageSquare, Bookmark, Clock, Flame } from "lucide-react"
 import { Button } from "@/components/ui/Button"
-import { timeAgoI18n, type Lang } from "@/lib/i18n"
+import { timeAgoI18n, translateRegion, type Lang } from "@/lib/i18n"
 
 interface ActivityViewProps {
   utenteLoggato: Utente | null
@@ -154,7 +154,7 @@ function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats, la
               >
                 <div className="font-bold text-[14px] mb-2 text-[var(--color-text-main)]">{c.titolo}</div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-bold text-[var(--color-text-faint)] uppercase tracking-wide">{c.regione}</span>
+                  <span className="text-[11px] font-bold text-[var(--color-text-faint)] uppercase tracking-wide">{translateRegion(c.regione, lang)}</span>
 
                   {showStats && (
                     <>

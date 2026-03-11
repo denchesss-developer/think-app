@@ -32,13 +32,6 @@ const FILTRI_KEYS = [
   { id: "Archivio", labelKey: "archivio", icon: <Archive className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> }
 ]
 
-const CITTA_TEST = [
-  { id: 'auto', nome: '📍 Rilevamento Auto', lat: null, lng: null, regione: '' },
-  { id: 'roma', nome: '🏛️ Roma, IT', lat: 41.9028, lng: 12.4964, regione: 'Lazio' },
-  { id: 'milano', nome: '🍕 Milano, IT', lat: 45.4642, lng: 9.1900, regione: 'Lombardia' },
-  { id: 'newyork', nome: '🗽 New York', lat: 40.7128, lng: -74.006, regione: 'New York' },
-]
-
 const ANIMALI = ['Pinguino', 'Volpe', 'Panda', 'Tigre']
 const AGGETTIVI = ['Saggio', 'Veloce', 'Astuto', 'Felice']
 
@@ -75,7 +68,6 @@ export default function ThinkApp() {
   const [nuovaRisposta, setNuovaRisposta] = useState('')
 
   const [mioNickname, setMioNickname] = useState('Anonimo')
-  const [gpsSimulato, setGpsSimulato] = useState('roma')
   const [filtroAttivo, setFiltroAttivo] = useState('Recenti')
   const [testoRicerca, setTestoRicerca] = useState('')
   const [mostraPannelloFiltri, setMostraPannelloFiltri] = useState(false)
@@ -112,7 +104,6 @@ export default function ThinkApp() {
 
   // Backend Calls
   async function fetchChats() {
-    console.log("DEBUG: Eseguo fetchChats per:", gpsSimulato)
     try {
       // Fetch all chats globally, ordered by newest first (limit 500 for performance if needed, but for now we fetch all relevant)
       const { data: allChats, error } = await supabase
@@ -134,9 +125,7 @@ export default function ThinkApp() {
   }
 
   async function ottieniCoordinate() {
-    const citta = CITTA_TEST.find(c => c.id === gpsSimulato)
-    if (citta && citta.id !== 'auto') return { lat: citta.lat!, lng: citta.lng!, regione: citta.regione }
-    return { lat: 41.9, lng: 12.4, regione: 'Europa' }
+    return { lat: 41.9, lng: 12.4, regione: t('tua_posizione') || 'Europa' }
   }
 
   // Effect Initialization
@@ -376,12 +365,6 @@ export default function ThinkApp() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchChats()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gpsSimulato])
 
   useEffect(() => {
     if (!chatAttiva) return
@@ -1121,9 +1104,6 @@ export default function ThinkApp() {
         chats={chatsFiltrate}
         sidebarOpen={sidebarOpen}
         isDark={isDark}
-        gpsSimulato={gpsSimulato}
-        cittaTest={CITTA_TEST}
-        setGpsSimulato={setGpsSimulato}
         onMarkerClick={apriChat}
         arcsViaggio={arcsViaggio}
       />
@@ -1333,7 +1313,7 @@ export default function ThinkApp() {
         nuovoMessaggio={nuovoMessaggio}
         setNuovoMessaggio={setNuovoMessaggio}
         creaChat={creaChat}
-        cittaSimulata={CITTA_TEST.find(c => c.id === gpsSimulato)?.nome || ''}
+        cittaSimulata={t('il_tuo_angolo')}
         mostraPopupBenvenuto={mostraPopupBenvenuto}
         setMostraPopupBenvenuto={setMostraPopupBenvenuto}
         utenteLoggato={utenteLoggato}

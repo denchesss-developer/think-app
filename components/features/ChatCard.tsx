@@ -3,7 +3,7 @@ import { GlassCard } from "@/components/ui/Glass"
 import { Badge } from "@/components/ui/Badge"
 import { MapPin, MessageCircle, Clock, Plane, Share2 } from "lucide-react"
 import { calcolaStatoVitale, STILI_STATO } from "@/components/features/MapGlobe"
-import { timeAgoI18n, type Lang } from "@/lib/i18n"
+import { timeAgoI18n, translateRegion, type Lang } from "@/lib/i18n"
 
 export function ChatCard({ chat, onClick, t, lang }: { chat: Chat, onClick: (chat: Chat) => void, t: (k: string) => string, lang: Lang }) {
   const count = chat.risposte_count ?? 0
@@ -32,7 +32,7 @@ export function ChatCard({ chat, onClick, t, lang }: { chat: Chat, onClick: (cha
   async function condividi(e: React.MouseEvent) {
     e.stopPropagation() // Don't open the chat
     const url = `${window.location.origin}?thought=${chat.id}`
-    const text = `"${chat.titolo}" — da ${chat.regione || 'Think'}`
+    const text = `"${chat.titolo}" — da ${translateRegion(chat.regione, lang) || 'Think'}`
 
     if (navigator.share) {
       await navigator.share({ title: 'Think', text, url }).catch(() => {})
@@ -65,7 +65,7 @@ export function ChatCard({ chat, onClick, t, lang }: { chat: Chat, onClick: (cha
           </span>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-hover)] text-[var(--color-text-muted)]">
             {hasReplies ? <Plane className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" /> : <MapPin className="w-3.5 h-3.5" />}
-            <span className="text-[10px] font-bold tracking-widest uppercase">{chat.regione}</span>
+            <span className="text-[10px] font-bold tracking-widest uppercase">{translateRegion(chat.regione, lang)}</span>
           </div>
         </div>
         

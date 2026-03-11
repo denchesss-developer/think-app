@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic'
 import { useRef, useEffect, useMemo, useCallback } from 'react'
-import { MapPin } from "lucide-react"
 import * as THREE from 'three'
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false })
@@ -35,9 +34,6 @@ interface MapGlobeProps {
   chats: Chat[]
   sidebarOpen: boolean
   isDark: boolean
-  gpsSimulato: string
-  cittaTest: { id: string, nome: string, lat: number | null, lng: number | null, regione: string }[]
-  setGpsSimulato: (v: string) => void
   onMarkerClick: (chat: Chat) => void
   arcsViaggio?: { id: string, startLat: number, startLng: number, endLat: number, endLng: number }[]
 }
@@ -75,9 +71,6 @@ export function MapGlobe({
   chats,
   sidebarOpen,
   isDark,
-  gpsSimulato,
-  cittaTest,
-  setGpsSimulato,
   onMarkerClick,
   arcsViaggio = []
 }: MapGlobeProps) {
@@ -357,17 +350,6 @@ export function MapGlobe({
         arcStroke={0.5}
         arcAltitudeAutoScale={0.4}
       />
-
-      <div className="absolute top-6 right-6 z-10 hidden sm:flex items-center glass-panel p-2 rounded-xl text-[var(--color-text-muted)] text-xs font-semibold shadow-lg backdrop-blur-3xl">
-        <MapPin className="w-4 h-4 mr-2 ml-1" />
-        <select 
-          className="bg-transparent border-none outline-none cursor-pointer pr-2 font-bold text-[var(--color-text-main)] appearance-none" 
-          value={gpsSimulato} 
-          onChange={(e) => setGpsSimulato(e.target.value)}
-        >
-          {cittaTest.map(c => <option key={c.id} value={c.id} className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">{c.nome}</option>)}
-        </select>
-      </div>
     </div>
   )
 }

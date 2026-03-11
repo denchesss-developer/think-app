@@ -87,6 +87,76 @@ export function vitaLabelI18n(giorni: number, lang: Lang): string {
   return `${giorni}${T_TIME[lang].d.replace(' ago', '').replace(' fa', '').trim()}`
 }
 
+// ─── Region translation helper ────────────────────────────────────────────────
+export function translateRegion(region: string | undefined | null, lang: Lang): string {
+  if (!region) return ''
+  const r = region.trim()
+  const map: Record<Lang, Record<string, string>> = {
+    it: {},
+    en: {
+      'Città del Vaticano': 'Vatican City',
+      'Mare Mediterraneo': 'Mediterranean Sea',
+      'Europa': 'Europe',
+      'Oceano Atlantico': 'Atlantic Ocean',
+      'Mar Tirreno': 'Tyrrhenian Sea',
+      'Italia': 'Italy',
+      'Francia': 'France',
+      'Spagna': 'Spain',
+      'Germania': 'Germany',
+      'Svizzera': 'Switzerland',
+      'Austria': 'Austria',
+      'Slovenia': 'Slovenia',
+      'Sconosciuto': 'Unknown',
+    },
+    fr: {
+      'Città del Vaticano': 'Cité du Vatican',
+      'Mare Mediterraneo': 'Mer Méditerranée',
+      'Europa': 'Europe',
+      'Oceano Atlantico': 'Océan Atlantique',
+      'Mar Tirreno': 'Mer Tyrrhénienne',
+      'Italia': 'Italie',
+      'Francia': 'France',
+      'Spagna': 'Espagne',
+      'Germania': 'Allemagne',
+      'Svizzera': 'Suisse',
+      'Austria': 'Autriche',
+      'Slovenia': 'Slovénie',
+      'Sconosciuto': 'Inconnu',
+    },
+    es: {
+      'Città del Vaticano': 'Ciudad del Vaticano',
+      'Mare Mediterraneo': 'Mar Mediterráneo',
+      'Europa': 'Europa',
+      'Oceano Atlantico': 'Océano Atlántico',
+      'Mar Tirreno': 'Mar Tirreno',
+      'Italia': 'Italia',
+      'Francia': 'Francia',
+      'Spagna': 'España',
+      'Germania': 'Alemania',
+      'Svizzera': 'Suiza',
+      'Austria': 'Austria',
+      'Slovenia': 'Eslovenia',
+      'Sconosciuto': 'Desconocido',
+    },
+    de: {
+      'Città del Vaticano': 'Vatikanstadt',
+      'Mare Mediterraneo': 'Mittelmeer',
+      'Europa': 'Europa',
+      'Oceano Atlantico': 'Atlantischer Ozean',
+      'Mar Tirreno': 'Tyrrhenisches Meer',
+      'Italia': 'Italien',
+      'Francia': 'Frankreich',
+      'Spagna': 'Spanien',
+      'Germania': 'Deutschland',
+      'Svizzera': 'Schweiz',
+      'Austria': 'Österreich',
+      'Slovenia': 'Slowenien',
+      'Sconosciuto': 'Unbekannt',
+    }
+  }
+  return map[lang]?.[r] || r
+}
+
 // ─── Translations Dictionary ──────────────────────────────────────────────────
 const TRANSLATIONS: Record<Lang, Record<string, string>> = {
   // ═══════════════════════════════════════════════════════════════════════════
@@ -163,6 +233,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nuovo_pensiero: 'Nuovo Pensiero',
     placeholder_componi: 'A cosa stai pensando nel tuo angolo di mondo?',
     lancia: 'Lancia',
+    il_tuo_angolo: 'Il tuo angolo di mondo',
     il_tuo_nome: 'Il tuo Nome',
     scegli_nome: 'Scegli un nome per farti riconoscere dagli altri esploratori.',
     salva_nome: 'Salva Nome',
@@ -288,6 +359,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nuovo_pensiero: 'New Thought',
     placeholder_componi: 'What are you thinking in your corner of the world?',
     lancia: 'Launch',
+    il_tuo_angolo: 'Your corner of the world',
     il_tuo_nome: 'Your Name',
     scegli_nome: 'Choose a name to be recognised by other explorers.',
     salva_nome: 'Save Name',
@@ -409,6 +481,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nuovo_pensiero: 'Nouvelle Pensée',
     placeholder_componi: 'À quoi pensez-vous dans votre coin du monde ?',
     lancia: 'Lancer',
+    il_tuo_angolo: 'Ton coin du monde',
     il_tuo_nome: 'Votre Nom',
     scegli_nome: 'Choisissez un nom pour être reconnu par les autres explorateurs.',
     salva_nome: 'Sauvegarder',
@@ -530,6 +603,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nuovo_pensiero: 'Nuevo Pensamiento',
     placeholder_componi: '¿En qué estás pensando en tu rincón del mundo?',
     lancia: 'Lanzar',
+    il_tuo_angolo: 'Tu rincón del mundo',
     il_tuo_nome: 'Tu Nombre',
     scegli_nome: 'Elige un nombre para ser reconocido por otros exploradores.',
     salva_nome: 'Guardar Nombre',
@@ -651,6 +725,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     nuovo_pensiero: 'Neuer Gedanke',
     placeholder_componi: 'Was denkst du gerade in deinem Teil der Welt?',
     lancia: 'Starten',
+    il_tuo_angolo: 'Deine Ecke der Welt',
     il_tuo_nome: 'Dein Name',
     scegli_nome: 'Wähle einen Namen, um von anderen Entdeckern erkannt zu werden.',
     salva_nome: 'Name speichern',
