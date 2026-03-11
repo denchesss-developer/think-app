@@ -5,14 +5,6 @@ import { X, Flag } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 import { Button } from "@/components/ui/Button"
 
-const MOTIVI_SEGNALAZIONE = [
-  { id: "spam", label: "Spam o pubblicità", icon: "📢" },
-  { id: "odio", label: "Contenuto d'odio o discriminazione", icon: "🚫" },
-  { id: "violenza", label: "Violenza o minacce", icon: "⚠️" },
-  { id: "nsfw", label: "Contenuti inappropriati", icon: "🔞" },
-  { id: "altro", label: "Altro", icon: "💬" },
-]
-
 interface ReportModalProps {
   isOpen: boolean
   onClose: () => void
@@ -20,13 +12,22 @@ interface ReportModalProps {
   rispostaId?: string
   testoContenuto?: string
   nickname: string
+  t: (key: string) => string
 }
 
-export function ReportModal({ isOpen, onClose, chatId, rispostaId, testoContenuto, nickname }: ReportModalProps) {
+export function ReportModal({ isOpen, onClose, chatId, rispostaId, testoContenuto, nickname, t }: ReportModalProps) {
   const [motivoSelezionato, setMotivoSelezionato] = useState<string | null>(null)
   const [dettagli, setDettagli] = useState("")
   const [invio, setInvio] = useState(false)
   const [inviato, setInviato] = useState(false)
+
+  const MOTIVI_SEGNALAZIONE = [
+    { id: "spam", label: t('motivo_spam'), icon: "📢" },
+    { id: "odio", label: t('motivo_odio'), icon: "🚫" },
+    { id: "violenza", label: t('motivo_violenza'), icon: "⚠️" },
+    { id: "nsfw", label: t('motivo_nsfw'), icon: "🔞" },
+    { id: "altro", label: t('motivo_altro'), icon: "💬" },
+  ]
 
   if (!isOpen) return null
 
@@ -78,7 +79,7 @@ export function ReportModal({ isOpen, onClose, chatId, rispostaId, testoContenut
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flag className="w-5 h-5 text-red-500" />
-            <h2 className="text-lg font-black tracking-tight">Segnala Contenuto</h2>
+            <h2 className="text-lg font-black tracking-tight">{t('segnala_contenuto')}</h2>
           </div>
           <button type="button" onClick={chiudi} className="p-2 rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors">
             <X className="w-5 h-5" />
@@ -88,16 +89,16 @@ export function ReportModal({ isOpen, onClose, chatId, rispostaId, testoContenut
         {inviato ? (
           <div className="py-8 text-center space-y-3">
             <div className="text-4xl">✅</div>
-            <h3 className="text-lg font-bold">Segnalazione Inviata</h3>
+            <h3 className="text-lg font-bold">{t('segnalazione_inviata')}</h3>
             <p className="text-[14px] text-[var(--color-text-muted)] font-medium">
-              Grazie per aver segnalato. Il nostro team esaminerà il contenuto.
+              {t('grazie_segnalazione')}
             </p>
-            <Button onClick={chiudi} className="mt-4">Chiudi</Button>
+            <Button onClick={chiudi} className="mt-4">{t('chiudi')}</Button>
           </div>
         ) : (
           <>
             <p className="text-[13px] font-medium text-[var(--color-text-muted)]">
-              Seleziona il motivo della segnalazione:
+              {t('seleziona_motivo')}
             </p>
 
             <div className="space-y-2">
@@ -120,7 +121,7 @@ export function ReportModal({ isOpen, onClose, chatId, rispostaId, testoContenut
 
             {motivoSelezionato === "altro" && (
               <textarea
-                placeholder="Descrivi il problema..."
+                placeholder={t('descrivi_problema')}
                 value={dettagli}
                 onChange={(e) => setDettagli(e.target.value)}
                 className="w-full p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] text-[14px] font-medium outline-none resize-none h-24 placeholder:text-[var(--color-text-faint)]"
@@ -134,7 +135,7 @@ export function ReportModal({ isOpen, onClose, chatId, rispostaId, testoContenut
               className="w-full"
               disabled={!motivoSelezionato || invio}
             >
-              {invio ? "Invio..." : "Invia Segnalazione"}
+              {invio ? t('invio') : t('invia_segnalazione')}
             </Button>
           </>
         )}

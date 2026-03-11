@@ -3,17 +3,9 @@ import { GlassCard } from "@/components/ui/Glass"
 import { Badge } from "@/components/ui/Badge"
 import { MapPin, MessageCircle, Clock, Plane, Share2 } from "lucide-react"
 import { calcolaStatoVitale, STILI_STATO } from "@/components/features/MapGlobe"
+import { timeAgoI18n, type Lang } from "@/lib/i18n"
 
-export function timeAgo(dateString: string) {
-  const min = Math.floor((Date.now() - new Date(dateString).getTime()) / 60000)
-  if (min < 1) return 'Ora'
-  if (min < 60) return `${min}m fa`
-  const hrs = Math.floor(min / 60)
-  if (hrs < 24) return `${hrs}h fa`
-  return `${Math.floor(hrs / 24)}g fa`
-}
-
-export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) => void }) {
+export function ChatCard({ chat, onClick, t, lang }: { chat: Chat, onClick: (chat: Chat) => void, t: (k: string) => string, lang: Lang }) {
   const count = chat.risposte_count ?? 0
   const hasReplies = count > 0
   const stato = calcolaStatoVitale(chat)
@@ -26,6 +18,16 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
   if (stato === "albero") badgeVariant = "tree"
   if (stato === "foglia_secca") badgeVariant = "faded"
   if (stato === "archivio") badgeVariant = "archived"
+
+  // Localised state name
+  const stateNameMap: Record<string, string> = {
+    seme: t('stato_nuova'),
+    germoglio: t('stato_crescita'),
+    albero: t('stato_popolare'),
+    foglia_secca: t('stato_inattiva'),
+    archivio: t('stato_archivio'),
+  }
+  const stateName = stateNameMap[stato] || stile.nome
 
   async function condividi(e: React.MouseEvent) {
     e.stopPropagation() // Don't open the chat
@@ -74,7 +76,7 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--color-border-subtle)]">
           <div className="flex items-center gap-2">
             <Badge variant={badgeVariant} icon={stile.icona}>
-              <span className="hidden xs:inline ml-1 text-[10px]">{stile.nome}</span>
+              <span className="hidden xs:inline ml-1 text-[10px]">{stateName}</span>
             </Badge>
             
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-widest bg-[var(--color-bg-hover)] border-[var(--color-border-subtle)] text-[var(--color-text-muted)]">
@@ -87,7 +89,7 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
               type="button"
               onClick={condividi}
               className="inline-flex items-center justify-center px-2.5 py-1 rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-hover)] hover:bg-[var(--color-brand-blue)]/20 text-[var(--color-text-muted)] hover:text-[var(--color-brand-blue)] transition-all duration-200"
-              title="Condividi pensiero"
+              title={t('condividi_pensiero')}
             >
               <Share2 className="w-3.5 h-3.5" />
             </button>
@@ -95,7 +97,7 @@ export function ChatCard({ chat, onClick }: { chat: Chat, onClick: (chat: Chat) 
           
           <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-faint)]">
             <Clock className="w-3.5 h-3.5" />
-            <span>{timeAgo(chat.ultima_attivita || chat.created_at)}</span>
+            <span>{timeAgoI18n(chat.ultima_attivita || chat.created_at, lang)}</span>
           </div>
         </div>
       </GlassCard>

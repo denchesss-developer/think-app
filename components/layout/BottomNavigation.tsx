@@ -9,6 +9,7 @@ interface BottomNavigationProps {
   nuovaRisposta?: string
   setNuovaRisposta?: (v: string) => void
   onInviaRisposta?: () => void
+  t: (key: string) => string
 }
 
 export function BottomNavigation({ 
@@ -18,7 +19,8 @@ export function BottomNavigation({
   isChatMode = false,
   nuovaRisposta = "",
   setNuovaRisposta,
-  onInviaRisposta
+  onInviaRisposta,
+  t
 }: BottomNavigationProps) {
   return (
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] lg:hidden flex items-center justify-center pointer-events-none w-full px-4">
@@ -48,7 +50,7 @@ export function BottomNavigation({
         >
           <input
             type="text"
-            placeholder="Rispondi..."
+            placeholder={t('rispondi')}
             value={nuovaRisposta}
             onChange={(e) => setNuovaRisposta?.(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onInviaRisposta?.()}
@@ -123,7 +125,7 @@ function NavButton({
         }`}
       >
         {React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
-          className: "w-[24px] h-[24px]", // Icone un po' più grandi per riempire lo spazio senza testi
+          className: "w-[24px] h-[24px]",
         })}
       </div>
     </button>

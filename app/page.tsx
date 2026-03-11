@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from '@/lib/supabaseClient'
 import { containsBannedWord } from "@/lib/bannedWords"
+import { useLang, timeAgoI18n, repliesLabel } from "@/lib/i18n"
 import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane, Share2, ChevronDown, SlidersHorizontal, FolderArchive } from "lucide-react"
 
 // Layout Components
@@ -12,7 +13,7 @@ import { MobileSheet } from "@/components/layout/MobileSheet"
 
 // Feature Components
 import { STILI_STATO, calcolaStatoVitale, MapGlobe } from "@/components/features/MapGlobe"
-import { ChatCard, timeAgo } from "@/components/features/ChatCard"
+import { ChatCard } from "@/components/features/ChatCard"
 import { AccountView } from "@/components/features/AccountView"
 import { ActivityView } from "@/components/features/ActivityView"
 import { ModalsContainer } from "@/components/features/ModalsContainer"
@@ -24,11 +25,11 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { GlassPanel } from "@/components/ui/Glass"
 
-const FILTRI = [
-  { id: "Recenti", label: "Recenti", icon: <Clock className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
-  { id: "Tendenze", label: "Tendenze", icon: <TrendingUp className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
-  { id: "Vicini", label: "Vicini", icon: <MapPin className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
-  { id: "Archivio", label: "Archivio", icon: <Archive className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> }
+const FILTRI_KEYS = [
+  { id: "Recenti", labelKey: "recenti", icon: <Clock className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
+  { id: "Tendenze", labelKey: "tendenze", icon: <TrendingUp className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
+  { id: "Vicini", labelKey: "vicini", icon: <MapPin className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
+  { id: "Archivio", labelKey: "archivio", icon: <Archive className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> }
 ]
 
 const CITTA_TEST = [
@@ -53,6 +54,7 @@ function nicknameErrorMessage(nick: string) {
 type Mode = "feed" | "chat" | "account" | "activity"
 
 export default function ThinkApp() {
+  const { lang, setLang, t } = useLang()
   const [appTheme, setAppTheme] = useState<AppTheme>("system")
   const [isDark, setIsDark] = useState(false)
 
@@ -794,14 +796,14 @@ export default function ThinkApp() {
     <div className="fade-in-up md:animate-in md:duration-500 pb-10">
       <div className="sticky top-0 z-[40] pb-2 pt-2 -mx-6 px-6 bg-[var(--color-bg-panel)] backdrop-blur-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-b border-[var(--color-border-subtle)]">
         <div className="lg:hidden mb-3">
-          <h2 className="text-[28px] font-black tracking-tight text-center">Feed</h2>
-          <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center">{chatsFiltrate.length} PENSIERI SPARSI</p>
+          <h2 className="text-[28px] font-black tracking-tight text-center">{t('feed')}</h2>
+          <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center">{chatsFiltrate.length} {t('pensieri_sparsi')}</p>
         </div>
         <div className="flex flex-row items-center gap-3 mb-4">
           <div className="flex-1">
             <Input
               icon={<Search className="w-4 h-4 text-[var(--color-text-faint)]" />}
-              placeholder="Cerca pensieri nel mondo..."
+              placeholder={t('cerca_pensieri')}
               value={testoRicerca}
               onChange={(e) => setTestoRicerca(e.target.value)}
               className="w-full shadow-sm border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] h-12 rounded-[20px]"
@@ -838,8 +840,8 @@ export default function ThinkApp() {
             >
               <FolderArchive className="w-5 h-5 flex-shrink-0" />
               <div className="flex flex-col items-start flex-1 text-left">
-                <span className="font-bold text-[15px]">Archiviati</span>
-                <span className="text-[12px] opacity-80 font-medium whitespace-nowrap overflow-hidden text-ellipsis">Sfoglia pensieri passati e conclusi</span>
+                <span className="font-bold text-[15px]">{t('archiviati')}</span>
+                <span className="text-[12px] opacity-80 font-medium whitespace-nowrap overflow-hidden text-ellipsis">{t('sfoglia_archivio')}</span>
               </div>
             </button>
 
@@ -855,7 +857,7 @@ export default function ThinkApp() {
                 marginRight: '-16px'
               }}
             >
-              {FILTRI.filter(f => f.id !== 'Archivio').map((f) => (
+              {FILTRI_KEYS.filter(f => f.id !== 'Archivio').map((f) => (
                 <button
                   key={f.id}
                   onClick={() => { setFiltroAttivo(f.id); setMostraPannelloFiltri(false); }}
@@ -866,7 +868,7 @@ export default function ThinkApp() {
                   }`}
                 >
                   {f.icon}
-                  {f.label}
+                  {t(f.labelKey)}
                 </button>
               ))}
             </div>
@@ -875,7 +877,7 @@ export default function ThinkApp() {
       </div>
 
       <div className="mt-4">
-        {chatsFiltrate.map(chat => <ChatCard key={chat.id} chat={chat} onClick={apriChat} />)}
+        {chatsFiltrate.map(chat => <ChatCard key={chat.id} chat={chat} onClick={apriChat} t={t} lang={lang} />)}
       </div>
     </div>
   )
@@ -900,7 +902,7 @@ export default function ThinkApp() {
                   stato === 'foglia_secca' ? 'bg-amber-400' : 'bg-zinc-500'
                   }`} />
                 <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-faint)]">
-                  {['seme', 'germoglio', 'albero'].includes(stato) ? 'Attivo' : stato === 'foglia_secca' ? 'In declino' : 'Archivio'}
+                  {['seme', 'germoglio', 'albero'].includes(stato) ? t('attivo') : stato === 'foglia_secca' ? t('in_declino') : t('archivio')}
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -913,7 +915,7 @@ export default function ThinkApp() {
                     setReportOpen(true)
                   }}
                   className="p-2 rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors text-[var(--color-text-faint)] hover:text-red-400"
-                  title="Segnala"
+                  title={t('segnala')}
                 >
                   <Flag className="w-4 h-4" />
                 </button>
@@ -929,7 +931,7 @@ export default function ThinkApp() {
                     }
                   }}
                   className="p-2 rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors text-[var(--color-text-faint)] hover:text-[var(--color-brand-blue)]"
-                  title="Condividi"
+                  title={t('condividi')}
                 >
                   <Share2 className="w-4 h-4" />
                 </button>
@@ -940,7 +942,7 @@ export default function ThinkApp() {
                     ? "text-[var(--color-brand-amber)] bg-[var(--color-brand-amber-dim)]"
                     : "text-[var(--color-text-faint)] hover:bg-[var(--color-bg-hover)]"
                     }`}
-                  title="Salva"
+                  title={t('salva')}
                 >
                   <Bookmark className="w-4 h-4" fill={bookmarks.some(b => b.chat?.id === chatAttiva.id) ? "currentColor" : "none"} />
                 </button>
@@ -967,7 +969,7 @@ export default function ThinkApp() {
               </span>
               <span className="flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5" />
-                {chatAttiva.risposte_count || 0} rispost{(chatAttiva.risposte_count || 0) === 1 ? 'a' : 'e'}
+                {repliesLabel(chatAttiva.risposte_count || 0, lang)}
               </span>
             </div>
           </div>
@@ -977,7 +979,7 @@ export default function ThinkApp() {
         <div>
           <h3 className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-4 ml-1 flex items-center gap-2">
             <MessageSquare className="w-3.5 h-3.5" />
-            Sviluppi
+            {t('sviluppi')}
           </h3>
 
           {risposte.length === 0 ? (
@@ -985,8 +987,8 @@ export default function ThinkApp() {
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[var(--color-bg-hover)] flex items-center justify-center">
                 <MessageSquare className="w-6 h-6 text-[var(--color-text-faint)]" />
               </div>
-              <p className="text-[var(--color-text-muted)] text-[14px] font-semibold mb-1">Nessuna risposta ancora</p>
-              <p className="text-[var(--color-text-faint)] text-[13px] font-medium">Sii il primo a contribuire a questo pensiero.</p>
+              <p className="text-[var(--color-text-muted)] text-[14px] font-semibold mb-1">{t('nessuna_risposta')}</p>
+              <p className="text-[var(--color-text-faint)] text-[13px] font-medium">{t('sii_il_primo')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -1015,7 +1017,7 @@ export default function ThinkApp() {
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-[var(--color-text-faint)]">{timeAgo(r.created_at)}</span>
+                      <span className="text-[10px] text-[var(--color-text-faint)]">{timeAgoI18n(r.created_at, lang)}</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -1025,7 +1027,7 @@ export default function ThinkApp() {
                           setReportOpen(true)
                         }}
                         className="ml-auto p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-text-faint)] hover:text-red-400"
-                        title="Segnala risposta"
+                        title={t('segnala_risposta')}
                       >
                         <Flag className="w-3 h-3" />
                       </button>
@@ -1140,13 +1142,13 @@ export default function ThinkApp() {
           mode !== "chat" ? (
             <div className="space-y-4">
               <Button size="lg" className="w-full flex items-center justify-center gap-2" onClick={() => setMostraModaleComponi(true)}>
-                <Plus className="w-5 h-5" strokeWidth={2.5} /> Crea Pensiero
+                <Plus className="w-5 h-5" strokeWidth={2.5} /> {t('lancia_pensiero')}
               </Button>
             </div>
           ) : (
             <div className="flex relative items-center gap-2">
               <Input
-                placeholder="Invia una risposta nell'etere..."
+                placeholder={t('rispondi')}
                 value={nuovaRisposta}
                 onChange={(e) => setNuovaRisposta(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && inviaRisposta()}
@@ -1170,7 +1172,7 @@ export default function ThinkApp() {
               type="button"
               onClick={() => setMostraPopupBenvenuto(true)}
               className="w-8 h-8 rounded-full bg-[var(--color-bg-hover)] text-[var(--color-text-faint)] hover:text-[var(--color-text-main)] flex items-center justify-center shadow-sm transition-colors"
-              title="Cambia Nickname"
+              title={t('pseudonimo')}
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -1192,9 +1194,9 @@ export default function ThinkApp() {
                   }}
                 />
                 {[
-                  { id: "feed", label: "Feed" },
-                  { id: "activity", label: "Attivit\u00e0" },
-                  { id: "account", label: "Profilo" },
+                  { id: "feed", label: t('feed') },
+                  { id: "activity", label: t('attivita') },
+                  { id: "account", label: t('profilo') },
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -1218,7 +1220,7 @@ export default function ThinkApp() {
               <Button variant="ghost" className="-ml-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors" onClick={() => { chiudiChat(); setMode("feed") }}>
                 <span className="flex items-center gap-2 text-[14px] font-bold">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-                  Torna al Feed
+                  {t('feed')}
                 </span>
               </Button>
             </div>
@@ -1237,6 +1239,9 @@ export default function ThinkApp() {
               appTheme={appTheme}
               setAppTheme={handleSetAppTheme}
               logout={logout}
+              t={t}
+              lang={lang}
+              setLang={setLang}
             />
           )}
           {mode === "activity" && (
@@ -1247,6 +1252,8 @@ export default function ThinkApp() {
               bookmarks={bookmarks}
               accountLoading={accountLoading}
               apriChat={apriChat}
+              t={t}
+              lang={lang}
             />
           )}
         </div>
@@ -1261,6 +1268,7 @@ export default function ThinkApp() {
         nuovaRisposta={nuovaRisposta}
         setNuovaRisposta={setNuovaRisposta}
         onInviaRisposta={inviaRisposta}
+        t={t}
       />
 
       {/* MOBILE SHEET PANELS */}
@@ -1288,6 +1296,9 @@ export default function ThinkApp() {
               appTheme={appTheme}
               setAppTheme={handleSetAppTheme}
               logout={logout}
+              t={t}
+              lang={lang}
+              setLang={setLang}
             />
           )}
           {mode === "activity" && (
@@ -1298,6 +1309,8 @@ export default function ThinkApp() {
               bookmarks={bookmarks}
               accountLoading={accountLoading}
               apriChat={apriChat}
+              t={t}
+              lang={lang}
             />
           )}
         </div>
@@ -1311,6 +1324,7 @@ export default function ThinkApp() {
         rispostaId={reportRispostaId}
         testoContenuto={reportTestoContenuto}
         nickname={mioNickname}
+        t={t}
       />
 
       <ModalsContainer
@@ -1338,6 +1352,7 @@ export default function ThinkApp() {
         mostraPopupNicknameObbligatorio={mostraPopupNicknameObbligatorio}
         onCompleteProfile={handleCompleteProfile}
         nicknameErrorMessage={nicknameErrorMessage}
+        t={t}
       />
     </div>
   )

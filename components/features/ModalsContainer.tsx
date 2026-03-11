@@ -41,13 +41,16 @@ interface ModalsContainerProps {
   mostraPopupNicknameObbligatorio: boolean
   onCompleteProfile: (nick: string) => Promise<{ error: any }>
   nicknameErrorMessage: (nick: string) => string
+
+  t: (key: string) => string
 }
 
 export function ModalsContainer({
   mostraModaleComponi, setMostraModaleComponi, nuovoMessaggio, setNuovoMessaggio, creaChat, cittaSimulata,
   mostraPopupBenvenuto, setMostraPopupBenvenuto, utenteLoggato, mioNickname, setMioNickname, salvaNicknameSoloLocale,
   mostraPopupLogin, setMostraPopupLogin, loginSent, loginLoading, accediConGoogle, emailLogin, setEmailLogin, inviaMagicLink, loginError,
-  mostraPopupNicknameObbligatorio, onCompleteProfile, nicknameErrorMessage
+  mostraPopupNicknameObbligatorio, onCompleteProfile, nicknameErrorMessage,
+  t
 }: ModalsContainerProps) {
 
   const [localNick, setLocalNick] = React.useState("")
@@ -74,9 +77,9 @@ export function ModalsContainer({
 
     if (error) {
       if (error.code === '23505') {
-        setCompleteError("Questo nickname è già stato preso da un altro utente")
+        setCompleteError(t('nick_gia_preso'))
       } else {
-        setCompleteError("Errore durante il salvataggio. Riprova.")
+        setCompleteError(t('errore_salv_riprova'))
       }
     }
   }
@@ -91,7 +94,7 @@ export function ModalsContainer({
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] opacity-10 blur-3xl rounded-full" />
           
           <div className="flex justify-between items-center mb-6 relative z-10">
-            <h3 className="font-bold text-sm uppercase tracking-widest text-[var(--color-text-faint)]">Nuovo Pensiero</h3>
+            <h3 className="font-bold text-sm uppercase tracking-widest text-[var(--color-text-faint)]">{t('nuovo_pensiero')}</h3>
             <Button variant="icon" size="icon" onClick={() => setMostraModaleComponi(false)} className="rounded-full">
               <X className="w-5 h-5" />
             </Button>
@@ -99,7 +102,7 @@ export function ModalsContainer({
           
           <Textarea 
             autoFocus={mostraModaleComponi}
-            placeholder="A cosa stai pensando nel tuo angolo di mondo?" 
+            placeholder={t('placeholder_componi')} 
             value={nuovoMessaggio} 
             onChange={(e) => setNuovoMessaggio(e.target.value)} 
             className="h-40 xl:h-48 border-none bg-transparent px-0 text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)]"
@@ -111,7 +114,7 @@ export function ModalsContainer({
               {cittaSimulata}
             </div>
             <Button onClick={creaChat} size="lg" className="bg-gradient-to-r from-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] text-white shadow-lg border-none hover:shadow-cyan-500/25 px-10">
-              Lancia
+              {t('lancia')}
             </Button>
           </div>
         </GlassPanel>
@@ -128,9 +131,9 @@ export function ModalsContainer({
           >
             <X className="w-4 h-4" />
           </button>
-          <h2 className="text-3xl font-bold mb-3 tracking-tight text-[var(--color-text-main)]">Il tuo Nome</h2>
+          <h2 className="text-3xl font-bold mb-3 tracking-tight text-[var(--color-text-main)]">{t('il_tuo_nome')}</h2>
           <p className="font-medium mb-8 text-[15px] text-[var(--color-text-muted)] leading-relaxed">
-            Scegli un nome per farti riconoscere dagli altri esploratori.
+            {t('scegli_nome')}
           </p>
           <div className="space-y-1 mb-6">
             <Input 
@@ -164,7 +167,7 @@ export function ModalsContainer({
             size="lg" 
             className="w-full py-5 text-base"
           >
-            {welcomeLoading ? "Salvataggio..." : "Salva Nome"}
+            {welcomeLoading ? t('salvataggio') : t('salva_nome')}
           </Button>
         </GlassPanel>
       </div>
@@ -182,9 +185,9 @@ export function ModalsContainer({
 
           {!loginSent ? (
             <>
-              <h2 className="text-3xl font-bold mb-3 tracking-tight text-[var(--color-text-main)]">Accedi a Think</h2>
+              <h2 className="text-3xl font-bold mb-3 tracking-tight text-[var(--color-text-main)]">{t('accedi_think')}</h2>
               <p className="font-medium mb-8 text-[15px] text-[var(--color-text-muted)] leading-relaxed px-4">
-                Nessuna password da ricordare. Entra e proteggi il tuo nome per sempre.
+                {t('nessuna_password')}
               </p>
 
               <Button
@@ -195,12 +198,12 @@ export function ModalsContainer({
                 className="w-full gap-3 py-4 text-[15px] hover:bg-[var(--color-bg-hover)]"
               >
                 <div className="bg-white p-1 rounded-sm"><GoogleLogo /></div>
-                Continua con Google
+                {t('continua_google')}
               </Button>
 
               <div className="flex items-center gap-4 my-8 opacity-60">
                 <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
-                <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">oppure via email</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">{t('oppure_email')}</span>
                 <div className="flex-1 h-px bg-[var(--color-border-subtle)]" />
               </div>
 
@@ -217,15 +220,15 @@ export function ModalsContainer({
                 size="lg" 
                 className="w-full py-4 bg-gradient-to-r from-[var(--color-text-main)] to-[var(--color-text-main)] text-[var(--color-bg-base)] hover:opacity-90"
               >
-                {loginLoading ? 'Invio in corso...' : 'Ricevi Magic Link'}
+                {loginLoading ? t('invio_corso') : t('ricevi_magic')}
               </Button>
               {loginError && <p className="text-red-400 mt-5 text-[13px] font-bold">{loginError}</p>}
             </>
           ) : (
             <div className="py-8">
-              <h2 className="text-3xl font-bold mb-3 tracking-tight text-[var(--color-text-main)]">Controlla la Mail</h2>
+              <h2 className="text-3xl font-bold mb-3 tracking-tight text-[var(--color-text-main)]">{t('controlla_mail')}</h2>
               <p className="font-medium text-[15px] text-[var(--color-text-muted)] leading-relaxed">
-                Abbiamo inviato un magic link a <span className="text-[var(--color-text-main)] font-bold">{emailLogin}</span>. Cliccalo dal tuo dispositivo per entrare!
+                {t('mail_inviata')} <span className="text-[var(--color-text-main)] font-bold">{emailLogin}</span>{t('mail_clicca')}
               </p>
             </div>
           )}
@@ -241,15 +244,15 @@ export function ModalsContainer({
             <span className="text-2xl">✨</span>
           </div>
 
-          <h2 className="text-2xl font-black mb-3 tracking-tight text-[var(--color-text-main)]">Benvenuta/o su Think!</h2>
+          <h2 className="text-2xl font-black mb-3 tracking-tight text-[var(--color-text-main)]">{t('benvenuto')}</h2>
           <p className="font-medium mb-8 text-[14px] text-[var(--color-text-muted)] leading-relaxed px-2">
-            Sei quasi pronto ad entrare. Come vuoi farti chiamare nel mondo? Scegli il tuo nickname unico.
+            {t('quasi_pronto')}
           </p>
 
           <div className="space-y-1 mb-8">
             <Input 
               type="text" 
-              placeholder="Esempio: Esploratore_99"
+              placeholder={t('esempio_nick')}
               className="text-center text-lg font-bold py-4 h-14 rounded-2xl border-[var(--color-border-strong)] focus:border-[var(--color-brand-blue)] transition-all" 
               value={localNick} 
               onChange={(e) => setLocalNick(e.target.value)} 
@@ -261,7 +264,7 @@ export function ModalsContainer({
               </p>
             )}
             <p className="text-[10px] font-bold text-[var(--color-text-faint)] mt-2 uppercase tracking-widest">
-              3-20 caratteri, solo lettere, numeri e _
+              {t('caratteri_nick')}
             </p>
           </div>
 
@@ -275,7 +278,7 @@ export function ModalsContainer({
               <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin mx-auto" />
             ) : (
               <span className="flex items-center justify-center gap-2">
-                Inizia l'Esplorazione
+                {t('inizia_esplorazione')}
                 <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
               </span>
             )}

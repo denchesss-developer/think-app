@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
+import { type Lang, LANGS } from "@/lib/i18n"
 
 export type AppTheme = "light" | "dark" | "system"
 
@@ -15,6 +16,9 @@ interface AccountViewProps {
   appTheme: AppTheme
   setAppTheme: (t: AppTheme) => void
   logout: () => void
+  t: (key: string) => string
+  lang: Lang
+  setLang: (l: Lang) => void
 }
 
 export function AccountView({
@@ -26,16 +30,19 @@ export function AccountView({
   accountLoading,
   appTheme,
   setAppTheme,
-  logout
+  logout,
+  t,
+  lang,
+  setLang
 }: AccountViewProps) {
 
   if (!utenteLoggato) {
     return (
       <div className="space-y-6 pb-28 fade-in-up animate-in duration-500">
         <div className="text-center">
-          <h2 className="text-[28px] font-black tracking-tight mb-1">Account</h2>
+          <h2 className="text-[28px] font-black tracking-tight mb-1">{t('account')}</h2>
           <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
-            Visitatore Anonimo
+            {t('visitatore_anonimo')}
           </p>
         </div>
 
@@ -48,15 +55,15 @@ export function AccountView({
             <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--color-brand-blue)]/15 border border-[var(--color-brand-blue)]/30 flex items-center justify-center">
               <span className="text-2xl">✨</span>
             </div>
-            <h3 className="text-[17px] font-black tracking-tight">Sblocca il Potenziale</h3>
+            <h3 className="text-[17px] font-black tracking-tight">{t('sblocca_potenziale')}</h3>
             <p className="text-[13px] font-medium text-[var(--color-text-muted)]">
-              Crea un account per salvare pensieri, tenere traccia delle risposte e molto altro.
+              {t('crea_account_desc')}
             </p>
             <Button
               onClick={() => window.dispatchEvent(new CustomEvent('open-login-modal'))}
               className="w-full mt-2"
             >
-              Accedi o Registrati
+              {t('accedi_registrati')}
             </Button>
           </div>
         </div>
@@ -65,30 +72,35 @@ export function AccountView({
 
         {/* Impostazioni Globali (Visibili a tutti) */}
         <div>
-          <h3 className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-4 ml-1">Impostazioni</h3>
+          <h3 className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-4 ml-1">{t('impostazioni')}</h3>
           <div className="space-y-2">
             <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)]">
-              <span className="font-bold text-[14px]">Lingua App</span>
-              <select className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right">
-                <option value="it" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Italiano</option>
-                <option value="en" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">English</option>
+              <span className="font-bold text-[14px]">{t('lingua_app')}</span>
+              <select 
+                value={lang}
+                onChange={(e) => setLang(e.target.value as Lang)}
+                className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right"
+              >
+                {LANGS.map(l => (
+                  <option key={l.code} value={l.code} className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">{l.label}</option>
+                ))}
               </select>
             </div>
             <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)]">
-              <span className="font-bold text-[14px]">Tema App</span>
+              <span className="font-bold text-[14px]">{t('tema_app')}</span>
               <select
                 value={appTheme}
                 onChange={(e) => setAppTheme(e.target.value as AppTheme)}
                 className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right"
               >
-                <option value="system" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Sistema</option>
-                <option value="light" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Chiaro</option>
-                <option value="dark" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Scuro</option>
+                <option value="system" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">{t('sistema')}</option>
+                <option value="light" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">{t('chiaro')}</option>
+                <option value="dark" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">{t('scuro')}</option>
               </select>
             </div>
             <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] opacity-50 cursor-not-allowed">
-              <span className="font-bold text-[14px]">Notifiche Push</span>
-              <span className="text-[11px] uppercase tracking-widest font-bold text-[var(--color-brand-amber)]">Presto</span>
+              <span className="font-bold text-[14px]">{t('notifiche_push')}</span>
+              <span className="text-[11px] uppercase tracking-widest font-bold text-[var(--color-brand-amber)]">{t('presto')}</span>
             </div>
           </div>
         </div>
@@ -99,10 +111,10 @@ export function AccountView({
   return (
     <div className="space-y-8 pb-28 fade-in-up animate-in duration-500">
       <div className="text-center">
-        <h2 className="text-[28px] font-black tracking-tight mb-1">Account</h2>
+        <h2 className="text-[28px] font-black tracking-tight mb-1">{t('account')}</h2>
         <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
-          {utenteLoggato.app_metadata?.provider === "google" ? "Connesso con Google" : "Connesso via Email"}
-          <span className="block mt-1 font-medium tracking-normal text-[var(--color-text-main)] sm:inline sm:mt-0 sm:ml-2">Account verificato</span>
+          {utenteLoggato.app_metadata?.provider === "google" ? t('connesso_google') : t('connesso_email')}
+          <span className="block mt-1 font-medium tracking-normal text-[var(--color-text-main)] sm:inline sm:mt-0 sm:ml-2">{t('account_verificato')}</span>
         </p>
       </div>
 
@@ -111,15 +123,15 @@ export function AccountView({
         <div className="absolute inset-0 bg-[var(--color-bg-panel)] backdrop-blur-2xl -z-10" />
         <div className="absolute inset-0 border border-[var(--color-brand-amber)]/30 rounded-3xl pointer-events-none" />
 
-        <Badge variant="premium" className="mb-4">Pioniera di Think</Badge>
+        <Badge variant="premium" className="mb-4">{t('badge_pioniere')}</Badge>
         <div className="text-[15px] font-medium text-[var(--color-text-main)]/80 leading-relaxed">
-          Sei tra i primi esploratori ad utilizzare Think. Il tuo account ha il badge premium attivo.
+          {t('badge_desc')}
         </div>
       </div>
 
       <div className="space-y-3">
         <label className="block text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-1">
-          Il tuo Pseudonimo Globale
+          {t('pseudonimo')}
         </label>
         <div className="relative">
           <Input
@@ -132,19 +144,19 @@ export function AccountView({
             onClick={async () => {
               const res = await onSaveNickname(mioNickname)
               if (res.success) {
-                alert("Nickname salvato con successo!")
+                alert(t('nick_salvato'))
               } else {
-                alert(res.error || "Errore durante il salvataggio")
+                alert(res.error || t('errore_salvataggio'))
               }
             }}
             className="absolute right-1 top-1 bottom-1 w-10 h-10 rounded-xl"
-            title="Salva"
+            title={t('salva')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
           </Button>
         </div>
         <p className="text-[11px] font-semibold text-[var(--color-text-faint)] ml-1">
-          Solo lettere, numeri e underscore. 3–20 caratteri.
+          {t('nick_regole')}
         </p>
       </div>
 
@@ -157,34 +169,39 @@ export function AccountView({
       ) : (
         <div className="space-y-10">
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-4 ml-1">Impostazioni</h3>
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-4 ml-1">{t('impostazioni')}</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)]">
-                <span className="font-bold text-[14px]">Lingua App</span>
-                <select className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right">
-                  <option value="it" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Italiano</option>
-                  <option value="en" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">English</option>
+                <span className="font-bold text-[14px]">{t('lingua_app')}</span>
+                <select
+                  value={lang}
+                  onChange={(e) => setLang(e.target.value as Lang)}
+                  className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right"
+                >
+                  {LANGS.map(l => (
+                    <option key={l.code} value={l.code} className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">{l.label}</option>
+                  ))}
                 </select>
               </div>
               <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)]">
-                <span className="font-bold text-[14px]">Tema App</span>
+                <span className="font-bold text-[14px]">{t('tema_app')}</span>
                 <select
                   value={appTheme}
                   onChange={(e) => setAppTheme(e.target.value as AppTheme)}
                   className="bg-transparent text-[var(--color-brand-blue)] font-bold text-sm outline-none cursor-pointer appearance-none text-right"
                 >
-                  <option value="system" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Sistema</option>
-                  <option value="light" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Chiaro</option>
-                  <option value="dark" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">Scuro</option>
+                  <option value="system" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">{t('sistema')}</option>
+                  <option value="light" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">{t('chiaro')}</option>
+                  <option value="dark" className="bg-[var(--color-bg-base)] text-[var(--color-text-main)]">{t('scuro')}</option>
                 </select>
               </div>
               <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] opacity-50 cursor-not-allowed">
-                <span className="font-bold text-[14px]">Notifiche Push</span>
-                <span className="text-[11px] uppercase tracking-widest font-bold text-[var(--color-brand-amber)]">Presto</span>
+                <span className="font-bold text-[14px]">{t('notifiche_push')}</span>
+                <span className="text-[11px] uppercase tracking-widest font-bold text-[var(--color-brand-amber)]">{t('presto')}</span>
               </div>
 
               {/* Sezione Feedback / Segnalazioni — Form Inline verso API Telegram */}
-              <FeedbackSection autore={utenteLoggato?.email ? 'Utente' : 'Anonimo'} />
+              <FeedbackSection autore={utenteLoggato?.email ? 'Utente' : 'Anonimo'} t={t} />
             </div>
           </div>
         </div>
@@ -192,7 +209,7 @@ export function AccountView({
 
       <div className="pt-8">
         <Button onClick={logout} variant="danger" size="lg" className="w-full">
-          Logout
+          {t('logout')}
         </Button>
       </div>
     </div>
@@ -203,7 +220,7 @@ export function AccountView({
 // --------------------------------------------------------------------------
 // Componente: FeedbackSection (Bug & Consigli → API Telegram → Topic N.4)
 // --------------------------------------------------------------------------
-function FeedbackSection({ autore }: { autore: string }) {
+function FeedbackSection({ autore, t }: { autore: string, t: (k: string) => string }) {
   const [aperto, setAperto] = useState(false)
   const [tipo, setTipo] = useState<'bug' | 'consiglio'>('consiglio')
   const [testo, setTesto] = useState('')
@@ -231,42 +248,42 @@ function FeedbackSection({ autore }: { autore: string }) {
             onClick={() => setAperto(true)}
             className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] font-semibold text-xs transition-colors py-2 px-4 rounded-xl hover:bg-[var(--color-bg-hover)]"
           >
-            Segnala un bug o dai un consiglio 💡
+            {t('segnala_bug')}
           </button>
         </div>
       ) : (
         <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] p-4 space-y-3">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Lasciaci un messaggio</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">{t('lascia_messaggio')}</p>
           <div className="flex gap-2">
-            {(['bug', 'consiglio'] as const).map(t => (
+            {(['bug', 'consiglio'] as const).map(tp => (
               <button
-                key={t}
-                onClick={() => setTipo(t)}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-colors border ${tipo === t ? 'bg-[var(--color-brand-blue)]/10 border-[var(--color-brand-blue)]/40 text-[var(--color-brand-blue)]' : 'border-[var(--color-border-subtle)] text-[var(--color-text-faint)]'}`}
+                key={tp}
+                onClick={() => setTipo(tp)}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-colors border ${tipo === tp ? 'bg-[var(--color-brand-blue)]/10 border-[var(--color-brand-blue)]/40 text-[var(--color-brand-blue)]' : 'border-[var(--color-border-subtle)] text-[var(--color-text-faint)]'}`}
               >
-                {t === 'bug' ? '🐛 Bug' : '💡 Consiglio'}
+                {t(tp)}
               </button>
             ))}
           </div>
           <textarea
             value={testo}
             onChange={e => setTesto(e.target.value)}
-            placeholder={tipo === 'bug' ? 'Descrivi il problema...' : 'La tua idea o suggerimento...'}
+            placeholder={tipo === 'bug' ? t('descrivi_problema') : t('tua_idea')}
             rows={3}
             className="w-full bg-[var(--color-bg-panel)] border border-[var(--color-border-subtle)] rounded-xl p-3 text-sm resize-none outline-none focus:border-[var(--color-brand-blue)]/60 text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)]"
           />
-          {stato === 'ok' && <p className="text-green-500 text-xs font-semibold text-center">✅ Ricevuto, grazie!</p>}
-          {stato === 'err' && <p className="text-red-400 text-xs font-semibold text-center">❌ Errore. Riprova.</p>}
+          {stato === 'ok' && <p className="text-green-500 text-xs font-semibold text-center">{t('ricevuto_grazie')}</p>}
+          {stato === 'err' && <p className="text-red-400 text-xs font-semibold text-center">{t('errore_riprova')}</p>}
           <div className="flex gap-2">
             <button onClick={() => setAperto(false)} className="flex-1 py-2 rounded-xl text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] transition-colors">
-              Annulla
+              {t('annulla')}
             </button>
             <button
               onClick={invia}
               disabled={stato === 'loading' || !testo.trim()}
               className="flex-1 py-2 rounded-xl text-xs font-bold bg-[var(--color-brand-blue)] text-white disabled:opacity-50 transition-opacity"
             >
-              {stato === 'loading' ? 'Invio...' : 'Invia'}
+              {stato === 'loading' ? t('invio') : t('invia')}
             </button>
           </div>
         </div>

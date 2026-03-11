@@ -3,6 +3,7 @@
 import React from "react"
 import { Pencil, MessageSquare, Bookmark, Clock, Flame } from "lucide-react"
 import { Button } from "@/components/ui/Button"
+import { timeAgoI18n, type Lang } from "@/lib/i18n"
 
 interface ActivityViewProps {
   utenteLoggato: Utente | null
@@ -11,6 +12,8 @@ interface ActivityViewProps {
   bookmarks: Bookmark[]
   accountLoading: boolean
   apriChat: (c: Chat) => void
+  t: (key: string) => string
+  lang: Lang
 }
 
 export function ActivityView({
@@ -20,27 +23,29 @@ export function ActivityView({
   bookmarks,
   accountLoading,
   apriChat,
+  t,
+  lang,
 }: ActivityViewProps) {
 
   if (!utenteLoggato) {
     return (
       <div className="space-y-8 pb-10 fade-in-up animate-in duration-500">
         <div className="text-center">
-          <h2 className="text-[28px] font-black tracking-tight mb-1">Attività</h2>
+          <h2 className="text-[28px] font-black tracking-tight mb-1">{t('attivita')}</h2>
           <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
-            La tua cronologia
+            {t('la_tua_cronologia')}
           </p>
         </div>
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="w-16 h-16 mb-4 rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] flex items-center justify-center">
             <Bookmark className="w-7 h-7 text-[var(--color-text-faint)]" />
           </div>
-          <h2 className="text-lg font-bold mb-2">Accedi per vedere la tua attività</h2>
+          <h2 className="text-lg font-bold mb-2">{t('accedi_attivita')}</h2>
           <p className="text-[14px] font-medium text-[var(--color-text-muted)] mb-6">
-            I tuoi pensieri, risposte e segnalibri appariranno qui.
+            {t('pensieri_risposte_qui')}
           </p>
           <Button onClick={() => window.dispatchEvent(new CustomEvent('open-login-modal'))}>
-            Accedi o Registrati
+            {t('accedi_registrati')}
           </Button>
         </div>
       </div>
@@ -60,50 +65,58 @@ export function ActivityView({
   return (
     <div className="space-y-8 pb-10 fade-in-up animate-in duration-500">
       <div className="text-center">
-        <h2 className="text-[28px] font-black tracking-tight mb-1">Attività</h2>
+        <h2 className="text-[28px] font-black tracking-tight mb-1">{t('attivita')}</h2>
         <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
-          La tua cronologia
+          {t('la_tua_cronologia')}
         </p>
       </div>
 
       {/* I miei Pensieri — con statistiche */}
       <ActivitySection
         icon={<Pencil className="w-4 h-4" />}
-        title="I miei Pensieri"
+        title={t('miei_pensieri')}
         items={myThinks}
         onSelect={apriChat}
-        emptyMsg="Non hai ancora creato nessun pensiero."
+        emptyMsg={t('no_pensieri')}
         showStats
+        lang={lang}
+        t={t}
       />
 
       {/* Le mie Risposte */}
       <ActivitySection
         icon={<MessageSquare className="w-4 h-4" />}
-        title="Le mie Risposte"
+        title={t('mie_risposte')}
         items={myRepliedChats}
         onSelect={apriChat}
-        emptyMsg="Non hai ancora risposto a nessun pensiero."
+        emptyMsg={t('no_risposte')}
+        lang={lang}
+        t={t}
       />
 
       {/* Pensieri Salvati */}
       <ActivitySection
         icon={<Bookmark className="w-4 h-4" />}
-        title="Pensieri Salvati"
+        title={t('pensieri_salvati')}
         items={savedChats}
         onSelect={apriChat}
-        emptyMsg="Non hai salvato nessun pensiero."
+        emptyMsg={t('no_salvati')}
+        lang={lang}
+        t={t}
       />
     </div>
   )
 }
 
-function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats }: { 
+function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats, lang, t }: { 
   icon: React.ReactNode
   title: string
   items: Chat[]
   onSelect: (c: Chat) => void
   emptyMsg: string
   showStats?: boolean
+  lang: Lang
+  t: (k: string) => string
 }) {
   const validItems = items.filter(Boolean)
   return (
@@ -125,7 +138,7 @@ function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats }: 
         <div className="space-y-2">
           {validItems.map((c, idx) => {
             const giorni = Math.floor((Date.now() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24))
-            const vitaLabel = giorni === 0 ? 'Oggi' : giorni === 1 ? '1g' : `${giorni}g`
+            const vitaLabel = giorni === 0 ? t('today') : `${giorni}${lang === 'it' ? 'g' : lang === 'de' ? ' T' : 'd'}`
             const haUltimaAtt = c.ultima_attivita && c.ultima_attivita !== c.created_at
             const gapRinascita = haUltimaAtt
               ? Math.floor((new Date(c.ultima_attivita!).getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24 * 7))
