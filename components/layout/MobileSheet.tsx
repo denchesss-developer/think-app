@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
 import { cn } from "@/lib/utils"
+import { X } from "lucide-react"
 
 type SheetPosition = "hidden" | "partial" | "expanded"
 
@@ -137,14 +138,28 @@ export function MobileSheet({
         }}
         onTouchMove={(e) => e.stopPropagation()}
       >
-        {/* Drag Handle */}
-        <div
-          className="w-full flex justify-center pt-5 pb-3 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none select-none relative z-20"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
-          <div className="w-12 h-1.5 bg-[var(--color-border-strong)] rounded-full opacity-40" />
+        {/* Header - Drag Handle & Close */}
+        <div className="w-full relative flex items-center justify-center pt-4 pb-3 flex-shrink-0 z-20">
+          {/* Active drag area covering the entire header width */}
+          <div
+            className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          />
+          {/* Visual pill indicator */}
+          <div className="w-12 h-1.5 bg-[var(--color-border-strong)] rounded-full opacity-40 pointer-events-none" />
+          
+          {/* Close Button X */}
+          <button 
+            type="button"
+            onClick={close} 
+            className="absolute right-4 top-3 p-1.5 z-30 rounded-full bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+            title="Chiudi tendina"
+            onTouchStart={(e) => e.stopPropagation()} // Prevent drag conflict
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Scrollable Content */}

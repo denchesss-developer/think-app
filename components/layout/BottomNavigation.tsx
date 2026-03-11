@@ -23,8 +23,8 @@ export function BottomNavigation({
   return (
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] lg:hidden flex items-center justify-center pointer-events-none w-full px-4">
       <div 
-        className={`glass-panel rounded-[2rem] flex items-center gap-1.5 pointer-events-auto backdrop-blur-xl shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden
-        ${isChatMode ? "w-full pl-4 pr-1.5 py-1.5" : "px-4 py-2 w-auto"}
+        className={`glass-panel rounded-[2rem] flex items-center pointer-events-auto backdrop-blur-xl shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden
+        ${isChatMode ? "w-full pl-4 pr-1 py-1 gap-0" : "px-4 py-2 w-auto gap-1.5"}
         `}
       >
         <NavButton
@@ -43,7 +43,7 @@ export function BottomNavigation({
         {/* Morphing Input Field */}
         <div 
           className={`transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center ${
-            isChatMode ? "flex-1 opacity-100 ml-2" : "w-0 opacity-0 overflow-hidden"
+            isChatMode ? "flex-1 opacity-100" : "w-0 opacity-0 overflow-hidden"
           }`}
         >
           <input
@@ -52,7 +52,7 @@ export function BottomNavigation({
             value={nuovaRisposta}
             onChange={(e) => setNuovaRisposta?.(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onInviaRisposta?.()}
-            className="w-full bg-transparent border-none outline-none text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] text-[15px] px-2"
+            className="w-full bg-transparent border-none outline-none text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] text-[15px] pl-2 pr-2"
           />
         </div>
 
@@ -61,7 +61,7 @@ export function BottomNavigation({
           type="button"
           onClick={isChatMode ? onInviaRisposta : onCompose}
           className={`flex-shrink-0 bg-[var(--color-brand-blue)] text-white flex items-center justify-center shadow-[0_4px_24px_rgba(59,130,246,0.6)] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95
-            ${isChatMode ? "h-[56px] w-[56px] rounded-xl rounded-r-[1.75rem] ml-1 mr-0 rotate-0" : "h-[52px] w-[52px] rounded-full mx-3 rotate-90"}
+            ${isChatMode ? "h-[40px] w-[40px] rounded-full ml-1 mr-2 rotate-0" : "h-[52px] w-[52px] rounded-full mx-3 rotate-90"}
           `}
         >
           <div className="relative w-full h-full flex items-center justify-center">
@@ -71,7 +71,7 @@ export function BottomNavigation({
             />
             <Send 
               strokeWidth={2.5} 
-              className={`absolute transition-all duration-400 flex items-center justify-center ${isChatMode ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"} w-5 h-5 ml-1`} 
+              className={`absolute transition-all duration-400 flex items-center justify-center ${isChatMode ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"} w-5 h-5 pb-[1px] pr-[2px]`} 
             />
           </div>
         </button>

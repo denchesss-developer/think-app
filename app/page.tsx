@@ -842,16 +842,6 @@ export default function ThinkApp() {
     const stato = calcolaStatoVitale(chatAttiva)
     return (
       <div className="fade-in-up sm:animate-in sm:duration-500 pb-6 relative">
-        {/* Pulsante Chiudi per Mobile (Tendina) */}
-        <button
-          type="button"
-          onClick={() => { chiudiChat(); setActiveTab("home"); setMobileSheetOpen(false) }}
-          className="absolute right-0 -top-1 lg:hidden p-2 rounded-full text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)] transition-colors z-[60]"
-          title="Chiudi chat"
-        >
-          <ChevronDown className="w-5 h-5" />
-        </button>
-
         {/* Pensiero Originale — Hero Card */}
         <div className="relative rounded-3xl overflow-hidden mb-6">
           {/* Gradient BG accent */}
