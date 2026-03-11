@@ -132,8 +132,8 @@ export function MapGlobe({
 
       const dot = mx * camPos.x + my * camPos.y + mz * camPos.z
 
-      // Wide fade zone (~17°): fully visible at dot>=0.3, fully hidden at dot<=0
-      const FADE_START = 0.3
+      // Wide fade zone (~45°): fully visible at dot>=0.7, fully hidden at dot<=0
+      const FADE_START = 0.7
       const horizonFactor = dot <= 0 ? 0 : Math.min(1, dot / FADE_START)
 
       // Read base opacity (0.3 for foglia_secca, 1 otherwise)
