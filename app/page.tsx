@@ -795,7 +795,7 @@ export default function ThinkApp() {
       <div className="sticky top-0 z-[40] pb-2 pt-2 -mx-6 px-6 bg-[var(--color-bg-panel)] backdrop-blur-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] border-b border-[var(--color-border-subtle)]">
         <div className="lg:hidden mb-3">
           <h2 className="text-[28px] font-black tracking-tight text-center">Feed</h2>
-          <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center">Pensieri dal mondo</p>
+          <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-center">{chatsFiltrate.length} PENSIERI SPARSI</p>
         </div>
         <div className="flex flex-row items-center gap-3 mb-4">
           <div className="flex-1">
@@ -804,7 +804,7 @@ export default function ThinkApp() {
               placeholder="Cerca pensieri nel mondo..."
               value={testoRicerca}
               onChange={(e) => setTestoRicerca(e.target.value)}
-              className="w-full shadow-sm border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] h-12 rounded-2xl"
+              className="w-full shadow-sm border border-[var(--color-border-subtle)] bg-[var(--color-bg-card)] h-12 rounded-[20px]"
             />
           </div>
           <button
@@ -826,7 +826,7 @@ export default function ThinkApp() {
             mostraPannelloFiltri ? "max-h-[300px] opacity-100 mb-4" : "max-h-0 opacity-0 mb-0"
           }`}
         >
-          <div className="p-4 bg-[var(--color-bg-card)] rounded-2xl border border-[var(--color-border-subtle)] shadow-sm flex flex-col gap-3">
+          <div className="p-4 bg-[var(--color-bg-card)] rounded-[20px] border border-[var(--color-border-subtle)] shadow-sm flex flex-col gap-3">
             {/* Livello Primario (In evidenza) */}
             <button
               onClick={() => { setFiltroAttivo('Archivio'); setMostraPannelloFiltri(false); }}
@@ -847,12 +847,12 @@ export default function ThinkApp() {
             <div 
               className="flex flex-row flex-nowrap overflow-x-auto gap-2 scrollbar-hide pb-1 pt-1"
               style={{
-                maskImage: "linear-gradient(to right, black 0%, black 90%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to right, black 0%, black 90%, transparent 100%)",
-                paddingLeft: '4px',
-                paddingRight: '4px',
-                marginLeft: '-4px',
-                marginRight: '-4px'
+                maskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                marginLeft: '-16px',
+                marginRight: '-16px'
               }}
             >
               {FILTRI.filter(f => f.id !== 'Archivio').map((f) => (
@@ -872,17 +872,7 @@ export default function ThinkApp() {
             </div>
           </div>
         </div>
-
-        <div className="flex items-center justify-between p-4 mt-2 mb-4 bg-transparent">
-          <div className="flex items-center gap-2.5 text-[var(--color-text-muted)]">
-            <MessageSquare className="w-4 h-4 opacity-70" />
-            <span className="text-[13px] font-semibold tracking-wide">
-              <strong className="text-[var(--color-text-main)]">{chatsFiltrate.length}</strong> pensieri sparsi
-            </span>
-          </div>
-        </div>
       </div>
-
 
       <div className="mt-4">
         {chatsFiltrate.map(chat => <ChatCard key={chat.id} chat={chat} onClick={apriChat} />)}
