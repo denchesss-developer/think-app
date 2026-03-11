@@ -1,7 +1,7 @@
 "use client"
 
 import dynamic from 'next/dynamic'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo, useCallback } from 'react'
 import { MapPin } from "lucide-react"
 import * as THREE from 'three'
 
@@ -23,19 +23,10 @@ export function calcolaStatoVitale(chat: Chat) {
   const oreDallUltimaAttivita = (Date.now() - dataAttivita) / (1000 * 60 * 60)
   const risposte = chat.risposte_count || 0
 
-  // Archivio Globale: nessuna attività per 30 giorni (720 ore)
   if (oreDallUltimaAttivita > 720) return 'archivio'
-
-  // Foglia Secca: Inattività per > 14 giorni (336 ore) OPPURE 0 risposte dopo i primi 3 giorni (72 ore) di vita
   if (oreDallUltimaAttivita > 336 || (risposte === 0 && oreDallaCreazione > 72)) return 'foglia_secca'
-
-  // Albero: più di 72 ore (3 giorni) di vita, almeno 5 risposte, e attività recente (< 7 giorni / 168 ore)
   if (oreDallaCreazione > 72 && risposte >= 5 && oreDallUltimaAttivita <= 168) return 'albero'
-
-  // Germoglio: Crescita anticipata (>= 2 risposte) OPPURE ha superato le 24h con almeno 1 risposta
   if (risposte >= 2 || (oreDallaCreazione > 24 && risposte > 0)) return 'germoglio'
-
-  // Seme: Default (0-72 ore, < 2 risposte)
   return 'seme'
 }
 
@@ -51,6 +42,34 @@ interface MapGlobeProps {
   arcsViaggio?: { id: string, startLat: number, startLng: number, endLat: number, endLng: number }[]
 }
 
+// ─── Graticola ────────────────────────────────────────────────────────────────
+// Computed once at module level (never changes) → zero re-render flicker
+const GRATICULE_STEP = 10
+const GRATICULE_RES  = 2.5
+const graticuleLines: [number, number][][] = []
+for (let lat = -90; lat <= 90; lat += GRATICULE_STEP) {
+  const row: [number, number][] = []
+  for (let lng = -180; lng <= 180; lng += GRATICULE_RES) row.push([lat, lng])
+  graticuleLines.push(row)
+}
+for (let lng = -180; lng <= 180; lng += GRATICULE_STEP) {
+  const row: [number, number][] = []
+  for (let lat = -90; lat <= 90; lat += GRATICULE_RES) row.push([lat, lng])
+  graticuleLines.push(row)
+}
+
+// ─── Animated position type ───────────────────────────────────────────────────
+interface AnimState {
+  fromLat: number; fromLng: number
+  toLat:   number; toLng:   number
+  start:   number; duration: number
+}
+
+function easeInOut(t: number) {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export function MapGlobe({
   countries,
   chats,
@@ -64,38 +83,106 @@ export function MapGlobe({
 }: MapGlobeProps) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const globeRef = useRef<any>(null)
-  // Cache DOM elements by chat ID so react-globe.gl gets the SAME element reference
-  // on each render. This is required for htmlTransitionDuration CSS transitions to work.
+  const globeRef    = useRef<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const elementCacheRef = useRef<Map<string, any>>(new Map())
+  const elCache     = useRef<Map<string, any>>(new Map())
+  const animMap     = useRef<Map<string, AnimState>>(new Map())
+  const rafRef      = useRef<number | null>(null)
+  // 'display' positions that we feed to the Globe (lat/lng may differ from DB during animation)
+  const displayRef  = useRef<Map<string, { lat: number, lng: number }>>(new Map())
 
+  // Initial camera
   useEffect(() => {
     if (globeRef.current) {
-      // Initial center: Europe/Mediterranean
       globeRef.current.pointOfView({ lat: 30, lng: 10, altitude: 2.5 }, 0)
     }
   }, [])
 
-  // Sync cache: remove stale elements for chats that no longer exist
+  // Detect position changes and start RAF animation
   useEffect(() => {
-    const chatIds = new Set(chats.map(c => String(c.id)))
-    elementCacheRef.current.forEach((_, id: string) => {
-      if (!chatIds.has(id)) elementCacheRef.current.delete(id)
+    chats.forEach(chat => {
+      const disp = displayRef.current.get(String(chat.id))
+      const destLat = chat.lat ?? 0
+      const destLng = chat.lng ?? 0
+
+      if (!disp) {
+        // First time we see this chat — set display to current position
+        displayRef.current.set(String(chat.id), { lat: destLat, lng: destLng })
+        return
+      }
+
+      // If position changed and not already animating to this target
+      const existing = animMap.current.get(String(chat.id))
+      const alreadyAnimating = existing && existing.toLat === destLat && existing.toLng === destLng
+      if (!alreadyAnimating && (disp.lat !== destLat || disp.lng !== destLng)) {
+        animMap.current.set(String(chat.id), {
+          fromLat: disp.lat, fromLng: disp.lng,
+          toLat: destLat,    toLng: destLng,
+          start: performance.now(), duration: 8000
+        })
+        if (!rafRef.current) {
+          rafRef.current = requestAnimationFrame(tick)
+        }
+      }
     })
+
+    // Remove stale display entries
+    const ids = new Set(chats.map(c => String(c.id)))
+    displayRef.current.forEach((_, id) => { if (!ids.has(id)) displayRef.current.delete(id) })
+    elCache.current.forEach((_, id) => { if (!ids.has(id)) elCache.current.delete(id) })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chats])
 
-  const disegnaMarkerGlobo = (item: Chat): HTMLElement => {
-    // Reuse the cached element for this chat ID to preserve the same DOM reference.
-    // react-globe.gl stores elements by reference in a WeakMap —
-    // returning the SAME element lets it apply CSS position transitions.
-    let el = elementCacheRef.current.get(String(item.id))
+  // RAF loop — interpolates display positions and updates marker elements styles
+  const tick = useCallback((now: number) => {
+    let hasMore = false
+
+    animMap.current.forEach((anim, id) => {
+      const t = Math.min(1, (now - anim.start) / anim.duration)
+      const e = easeInOut(t)
+      const lat = anim.fromLat + (anim.toLat - anim.fromLat) * e
+      const lng = anim.fromLng + (anim.toLng - anim.fromLng) * e
+
+      displayRef.current.set(id, { lat, lng })
+
+      // Move the cached DOM element to the interpolated position using globe's API
+      if (globeRef.current) {
+        const coords = globeRef.current.getCoords?.(lat, lng, 0.015)
+        if (coords) {
+          const el = elCache.current.get(id)
+          if (el) {
+            const pos = globeRef.current.toGlobeCoords?.(lat, lng)
+            if (pos) {
+              el.style.transform = `translate(-50%, -50%) translate3d(${pos.x}px, ${pos.y}px, 0px)`
+            }
+          }
+        }
+      }
+
+      if (t < 1) hasMore = true
+      else {
+        displayRef.current.set(id, { lat: anim.toLat, lng: anim.toLng })
+        animMap.current.delete(id)
+      }
+    })
+
+    rafRef.current = hasMore ? requestAnimationFrame(tick) : null
+  }, [])
+
+  // Materials computed once per theme change (not every render)
+  const globeMaterial = useMemo(
+    () => new THREE.MeshBasicMaterial({ color: isDark ? '#141416' : '#f4f4f5' }),
+    [isDark]
+  )
+
+  // Stable marker renderer — only recreates when theme changes
+  const disegnaMarkerGlobo = useCallback((item: Chat): HTMLElement => {
+    let el = elCache.current.get(String(item.id))
 
     if (!el) {
       el = document.createElement('div')
       el.addEventListener('wheel', (e: Event) => e.stopPropagation(), { passive: false })
 
-      // Attach event listeners ONCE — read __data at call time to avoid stale closures
       el.addEventListener('mousedown', (e: Event) => {
         e.stopPropagation()
         const data: Chat = el.__data
@@ -109,28 +196,23 @@ export function MapGlobe({
         onMarkerClick(data)
       }, { passive: false })
 
-      elementCacheRef.current.set(String(item.id), el)
+      elCache.current.set(String(item.id), el)
     }
 
-    // Always update the data reference so click handlers get latest state
     el.__data = item
 
     const stato = calcolaStatoVitale(item)
-    if (stato === 'archivio') {
-      el.style.display = 'none'
-      return el
-    }
+    if (stato === 'archivio') { el.style.display = 'none'; return el }
     el.style.display = ''
 
     const isSbiadita = stato === 'foglia_secca'
     const stile = STILI_STATO[stato]
-    const bgColor = isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(24, 24, 27, 0.95)'
+    const bgColor   = isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(24, 24, 27, 0.95)'
     const textColor = isDark ? 'black' : 'white'
-    const shadow = isDark ? '0 8px 32px rgba(255,255,255,0.2)' : '0 8px 32px rgba(0,0,0,0.3)'
+    const shadow    = isDark ? '0 8px 32px rgba(255,255,255,0.2)' : '0 8px 32px rgba(0,0,0,0.3)'
 
     el.innerHTML = `
       <div 
-        class="transition-all duration-300 ease-out hover:scale-110 active:scale-95"
         style="
           background: ${bgColor};
           padding: 6px 14px; 
@@ -148,35 +230,14 @@ export function MapGlobe({
           display: flex;
           align-items: center;
           gap: 6px;
+          transition: transform 0.3s ease, opacity 0.3s ease;
       ">
         <span style="font-size: 1.1em; opacity: 0.9; transform: translateY(-1px); display: inline-block;">${stile.icona}</span> 
         <span>${item.risposte_count > 0 ? item.risposte_count : 'New'}</span>
       </div>`
 
     return el
-  }
-
-  // Generazione Manuale Graticola in stile "nativo" (step a 10 gradi)
-  const GRATICULE_STEP = 10;
-  const graticuleLines = [];
-  
-  // Paralleli
-  for (let lat = -90; lat <= 90; lat += GRATICULE_STEP) {
-    const coords = [];
-    for (let lng = -180; lng <= 180; lng += 2.5) { // Risoluzione più alta per sfericità perfetta
-      coords.push([lat, lng]);
-    }
-    graticuleLines.push(coords);
-  }
-  
-  // Meridiani
-  for (let lng = -180; lng <= 180; lng += GRATICULE_STEP) {
-    const coords = [];
-    for (let lat = -90; lat <= 90; lat += 2.5) {
-      coords.push([lat, lng]);
-    }
-    graticuleLines.push(coords);
-  }
+  }, [isDark, onMarkerClick])
 
   return (
     <div className={`absolute top-0 right-0 transition-[left] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center ${sidebarOpen ? "lg:left-[420px]" : "left-0"} max-lg:left-0 lg:bottom-0 max-lg:bottom-[12dvh]`}>
@@ -184,42 +245,38 @@ export function MapGlobe({
         ref={globeRef}
         backgroundColor="rgba(0,0,0,0)"
         showGlobe={true}
-        globeMaterial={
-          new THREE.MeshBasicMaterial({ 
-            color: isDark ? '#141416' : '#f4f4f5',
-          })
-        }
+        globeMaterial={globeMaterial}
         showAtmosphere={false}
-        showGraticules={false} // Usiamo esclusivamente quella custom per entrambi per avere 100% simmetria di design
+        showGraticules={false}
         polygonsData={countries.features}
         polygonCapColor={() => isDark ? '#27272a' : '#dfe1e5'}
-        polygonSideColor={() => isDark ? '#1e1e20' : '#d2d4d9'} // Colore laterale per creare ombra 3D
-        polygonStrokeColor={() => isDark ? '#52525b' : '#a1a1aa'} // Confini nazioni
+        polygonSideColor={() => isDark ? '#1e1e20' : '#d2d4d9'}
+        polygonStrokeColor={() => isDark ? '#52525b' : '#a1a1aa'}
         polygonAltitude={0.025}
         
-        // Graticola Geografica Custom fedele al preset nativo nero
         pathsData={graticuleLines}
-        pathPoints={(d: any) => d}
-        pathPointLat={(p: any) => p[0]}
-        pathPointLng={(p: any) => p[1]}
-        pathColor={() => isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.15)'} // Griglia chiara notevolmente più scura e definita (slate-900 15%)
+        pathPoints={(d: unknown) => d as [number, number][]}
+        pathPointLat={(p: unknown) => (p as [number, number])[0]}
+        pathPointLng={(p: unknown) => (p as [number, number])[1]}
+        pathColor={() => isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.15)'}
         pathDashLength={0}
-        pathResolution={2} // Altissima risoluzione di curva
-        pathStroke={0.5} // Linea morbidissima e sottile
+        pathResolution={2}
+        pathStroke={0.5}
 
-        htmlElementsData={chats} 
-        htmlLat="lat" 
-        htmlLng="lng" 
+        htmlElementsData={chats}
+        htmlLat="lat"
+        htmlLng="lng"
         htmlElement={(d: object) => disegnaMarkerGlobo(d as Chat)}
         htmlTransitionDuration={8000}
 
-        /* Travel arcs: animated path when a thought moves to a new position */
         arcsData={arcsViaggio}
         arcStartLat="startLat"
         arcStartLng="startLng"
         arcEndLat="endLat"
         arcEndLng="endLng"
-        arcColor={() => isDark ? ['rgba(96,165,250,0)', 'rgba(96,165,250,0.9)', 'rgba(96,165,250,0)'] : ['rgba(37,99,235,0)', 'rgba(37,99,235,0.8)', 'rgba(37,99,235,0)']}
+        arcColor={() => isDark
+          ? ['rgba(96,165,250,0)', 'rgba(96,165,250,0.9)', 'rgba(96,165,250,0)']
+          : ['rgba(37,99,235,0)', 'rgba(37,99,235,0.8)', 'rgba(37,99,235,0)']}
         arcDashLength={0.4}
         arcDashGap={0.15}
         arcDashAnimateTime={30000}
