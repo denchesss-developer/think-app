@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from '@/lib/supabaseClient'
 import { containsBannedWord } from "@/lib/bannedWords"
-import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag } from "lucide-react"
+import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane } from "lucide-react"
 
 // Layout Components
 import { Sidebar } from "@/components/layout/Sidebar"
@@ -280,16 +280,33 @@ export default function ThinkApp() {
     })
 
     // Realtime Subscriptions
-    console.warn("DEBUG: Subscribing to realtime chats...")
     const chatsChannel = supabase
       .channel('public:chats_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, (payload) => {
-        console.warn("DEBUG/REALTIME: Chat change detected:", payload.eventType)
-        fetchChats().catch(e => console.error("DEBUG: fetchChats from realtime failed:", e))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats' }, (payload) => {
+        // New chat: add to array without replacing existing items (preserves transitions)
+        if (payload.new) {
+          setChats((prev) => {
+            const exists = prev.some(c => c.id === payload.new.id)
+            if (exists) return prev
+            return [payload.new as Chat, ...prev]
+          })
+        }
       })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'risposte' }, (payload) => {
-        console.warn("DEBUG/REALTIME: New answer detected, refreshing chats...")
-        fetchChats().catch(e => console.error("DEBUG: fetchChats from realtime (risposte) failed:", e))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chats' }, (payload) => {
+        // Updated chat: update just this item in-place so react-globe.gl can smoothly
+        // transition (CSS htmlTransitionDuration) instead of teleporting
+        if (payload.new) {
+          setChats((prev) => prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } as Chat : c))
+        }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chats' }, (payload) => {
+        if (payload.old) {
+          setChats((prev) => prev.filter(c => c.id !== (payload.old as Chat).id))
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'risposte' }, () => {
+        // Risposte: a new reply may have updated the chat's risposte_count / coordinates
+        // The chats UPDATE event will handle that, so nothing extra needed here
       })
       .subscribe((status) => {
         console.warn("DEBUG/REALTIME: Subscription status:", status)
@@ -823,7 +840,10 @@ export default function ThinkApp() {
                 {chatAttiva.autore}
               </span>
               <span className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" />
+                {(chatAttiva.risposte_count ?? 0) > 0
+                  ? <Plane className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />
+                  : <MapPin className="w-3.5 h-3.5" />
+                }
                 {chatAttiva.regione}
               </span>
               <span className="flex items-center gap-1.5">
