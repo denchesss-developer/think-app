@@ -1096,7 +1096,7 @@ export default function ThinkApp() {
                   {/* Content */}
                   <div className="flex-1 pb-4 min-w-0">
                     <div className="flex items-start justify-between mb-1.5 gap-2">
-                      <div className="flex flex-col gap-1 min-w-0">
+                      <div className="flex flex-col gap-1 min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[12px] font-bold text-[var(--color-text-main)] truncate">{r.autore}</span>
                           {r.regione && (
@@ -1105,24 +1105,24 @@ export default function ThinkApp() {
                               {r.regione}
                             </span>
                           )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-[var(--color-text-faint)] whitespace-nowrap">{timeAgoI18n(r.created_at, lang)}</span>
                           
                           {/* Translate Button for Reply */}
-                          <button
-                            type="button"
-                            onClick={() => handleTranslateReply(r.id, r.testo)}
-                            disabled={translatedReplies[r.id]?.loading || translatedReplies[r.id]?.text !== undefined}
-                            className={`p-1 rounded-md transition-colors flex-shrink-0 ${translatedReplies[r.id]?.text ? 'text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10' : 'text-[var(--color-text-faint)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)]'}`}
-                            title="Traduci"
-                          >
-                            {translatedReplies[r.id]?.loading ? (
-                              <div className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                            ) : (
-                              <Globe className="w-3.5 h-3.5" />
-                            )}
-                          </button>
+                          <div className="ml-auto flex items-center gap-2">
+                            <span className="text-[10px] text-[var(--color-text-faint)] whitespace-nowrap">{timeAgoI18n(r.created_at, lang)}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleTranslateReply(r.id, r.testo)}
+                              disabled={translatedReplies[r.id]?.loading || translatedReplies[r.id]?.text !== undefined}
+                              className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${translatedReplies[r.id]?.text ? 'text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10' : 'text-[var(--color-text-faint)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)]'}`}
+                              title="Traduci"
+                            >
+                              {translatedReplies[r.id]?.loading ? (
+                                <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                              ) : (
+                                <Globe className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
 
