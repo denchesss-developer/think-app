@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from '@/lib/supabaseClient'
 import { containsBannedWord } from "@/lib/bannedWords"
 import { useLang, timeAgoI18n, repliesLabel } from "@/lib/i18n"
-import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane, Share2, ChevronDown, SlidersHorizontal, FolderArchive } from "lucide-react"
+import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane, Share2, ChevronDown, SlidersHorizontal, FolderArchive, Languages, Globe } from "lucide-react"
 
 // Layout Components
 import { Sidebar } from "@/components/layout/Sidebar"
@@ -24,6 +24,9 @@ import type { AppTheme } from "@/components/features/AccountView"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { GlassPanel } from "@/components/ui/Glass"
+
+// Actions
+import { translateText, translateSearchQuery } from "@/app/actions/translate"
 
 const FILTRI_KEYS = [
   { id: "Recenti", labelKey: "recenti", icon: <Clock className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
@@ -64,6 +67,12 @@ export default function ThinkApp() {
   const [arcsViaggio, setArcsViaggio] = useState<{ id: string, startLat: number, startLng: number, endLat: number, endLng: number }[]>([])
 
   const [chatAttiva, setChatAttiva] = useState<Chat | null>(null)
+  
+  // Translation State
+  const [translatedSeed, setTranslatedSeed] = useState<{ text: string, isTranslated: boolean, loading: boolean }>({ text: '', isTranslated: false, loading: false })
+  const [translatedReplies, setTranslatedReplies] = useState<Record<number, { text: string, loading: boolean }>>({})
+  const [searchQueryLng, setSearchQueryLng] = useState<string>('')
+
   const [risposte, setRisposte] = useState<Risposta[]>([])
   const [nuovaRisposta, setNuovaRisposta] = useState('')
 
@@ -105,20 +114,28 @@ export default function ThinkApp() {
   // Backend Calls
   async function fetchChats() {
     try {
-      // Fetch all chats globally, ordered by newest first (limit 500 for performance if needed, but for now we fetch all relevant)
-      const { data: allChats, error } = await supabase
-        .from('chats')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(500)
+      if (searchQueryLng) {
+        // Use Global Search RPC if a translated search query exists
+        const { data, error } = await supabase.rpc('search_chats', { search_term: searchQueryLng });
+        if (error) {
+           console.error("DEBUG: Search RPC error:", error);
+           return;
+        }
+        setChats(data || []);
+      } else {
+        // Fetch all chats globally, ordered by newest first
+        const { data: allChats, error } = await supabase
+          .from('chats')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(500)
 
-      if (error) {
-        console.error("DEBUG: Supabase fetch error:", error)
-        return
+        if (error) {
+          console.error("DEBUG: Supabase fetch error:", error)
+          return
+        }
+        setChats(allChats || [])
       }
-
-      console.log(`DEBUG: fetchChats recuperate ${allChats?.length} chats dal db`)
-      setChats(allChats || [])
     } catch (err) {
       console.error("DEBUG: fetchChats error:", err)
     }
@@ -601,14 +618,58 @@ export default function ThinkApp() {
     setMode("chat")
     setActiveTab("esplora")
     setMobileSheetOpen(true)
+    
+    // Reset translations when opening a new chat
+    setTranslatedSeed({ text: '', isTranslated: false, loading: true })
+    setTranslatedReplies({})
+    
+    // Fetch replies
     const { data } = await supabase.from('risposte').select('*').eq('chat_id', chat.id).order('created_at', { ascending: true })
     if (data) setRisposte(data)
+    
+    // Handle Translation
+    const translationResult = await translateText(
+      chat.titolo,
+      lang,
+      chat.id,
+      'chat'
+    )
+    
+    if (translationResult.sourceLang !== lang.toLowerCase() && !translationResult.sourceLang.startsWith(lang.toLowerCase())) {
+      setTranslatedSeed({
+         text: translationResult.translatedText,
+         isTranslated: true,
+         loading: false
+      })
+    } else {
+      setTranslatedSeed({
+         text: chat.titolo,
+         isTranslated: false,
+         loading: false
+      })
+    }
   }
 
   function chiudiChat() {
     setChatAttiva(null)
     setRisposte([])
     setMode("feed")
+  }
+
+  async function handleTranslateReply(replyId: number, originalText: string) {
+    if (translatedReplies[replyId]?.text) return; // already translated
+
+    setTranslatedReplies(prev => ({ ...prev, [replyId]: { text: '', loading: true } }));
+
+    const result = await translateText(originalText, lang, replyId, 'reply');
+
+    setTranslatedReplies(prev => ({
+      ...prev,
+      [replyId]: {
+        text: result.translatedText,
+        loading: false
+      }
+    }));
   }
 
   async function inviaRisposta() {
@@ -748,6 +809,26 @@ export default function ThinkApp() {
     else setLoginSent(true)
   }
 
+  // Multi-lingual search debouncer
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (testoRicerca.trim().length > 2) {
+        // Translate the search query into English (ponte)
+        const translatedQuery = await translateSearchQuery(testoRicerca);
+        setSearchQueryLng(translatedQuery);
+      } else {
+        setSearchQueryLng('');
+      }
+    }, 600); // 600ms debounce to avoid spamming the DeepL API
+
+    return () => clearTimeout(timer);
+  }, [testoRicerca]);
+
+  // Trigger fetchChats when searchQueryLng changes (handled by the debouncer)
+  useEffect(() => {
+    fetchChats();
+  }, [searchQueryLng]);
+
   // Views Renderers
   const getChatsFiltrate = () => {
     let f = [...chats].filter(c => c.lat !== null)
@@ -765,7 +846,10 @@ export default function ThinkApp() {
       })
     }
 
-    if (testoRicerca) f = f.filter(c => c.titolo.toLowerCase().includes(testoRicerca.toLowerCase()) || c.autore.toLowerCase().includes(testoRicerca.toLowerCase()))
+    // Client-side fallback filtering if search term isn't translated yet, or for immediate local feedback
+    if (testoRicerca && !searchQueryLng) {
+      f = f.filter(c => c.titolo.toLowerCase().includes(testoRicerca.toLowerCase()) || c.autore.toLowerCase().includes(testoRicerca.toLowerCase()))
+    }
 
     if (filtroAttivo === 'Tendenze') f.sort((a, b) => (b.risposte_count || 0) - (a.risposte_count || 0))
     console.log(`DEBUG: Filtraggio completato. Input: ${chats.length}, Output: ${f.length}`)
@@ -933,9 +1017,30 @@ export default function ThinkApp() {
             </div>
 
             {/* Il Pensiero */}
-            <p className="text-[18px] sm:text-[20px] font-bold leading-relaxed text-[var(--color-text-main)] mb-6">
-              {chatAttiva.titolo}
-            </p>
+            <div className="mb-6 relative">
+              <p className={`text-[18px] sm:text-[20px] font-bold leading-relaxed text-[var(--color-text-main)] transition-opacity duration-300 ${translatedSeed.loading ? 'opacity-50' : 'opacity-100'}`}>
+                {translatedSeed.text || chatAttiva.titolo}
+              </p>
+              
+              {/* Translation Badge */}
+              {translatedSeed.isTranslated && !translatedSeed.loading && (
+                <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-bg-panel)] border border-[var(--color-border-subtle)] backdrop-blur-md shadow-sm">
+                  <Languages className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+                  <span className="text-[10px] font-bold tracking-wide text-[var(--color-text-muted)] uppercase">
+                    (Tradotto in automatico)
+                  </span>
+                </div>
+              )}
+              {/* Loading State for Translation */}
+              {translatedSeed.loading && (
+                <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-bg-panel)] border border-[var(--color-border-subtle)] backdrop-blur-md shadow-sm animate-pulse">
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-[var(--color-text-faint)] border-t-transparent animate-spin" />
+                  <span className="text-[10px] font-bold tracking-wide text-[var(--color-text-faint)] uppercase">
+                    Traduzione in corso...
+                  </span>
+                </div>
+              )}
+            </div>
 
             {/* Meta info */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-faint)]">
@@ -989,18 +1094,38 @@ export default function ThinkApp() {
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 pb-4">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[12px] font-bold text-[var(--color-text-main)]">{r.autore}</span>
-                        {r.regione && (
-                          <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] flex items-center gap-0.5 bg-[var(--color-bg-hover)] px-1.5 py-0.5 rounded-sm">
-                            <MapPin className="w-2.5 h-2.5" />
-                            {r.regione}
-                          </span>
-                        )}
+                  <div className="flex-1 pb-4 min-w-0">
+                    <div className="flex items-start justify-between mb-1.5 gap-2">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[12px] font-bold text-[var(--color-text-main)] truncate">{r.autore}</span>
+                          {r.regione && (
+                            <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] flex items-center gap-0.5 bg-[var(--color-bg-hover)] px-1.5 py-0.5 rounded-sm whitespace-nowrap">
+                              <MapPin className="w-2.5 h-2.5" />
+                              {r.regione}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-[var(--color-text-faint)] whitespace-nowrap">{timeAgoI18n(r.created_at, lang)}</span>
+                          
+                          {/* Translate Button for Reply */}
+                          <button
+                            type="button"
+                            onClick={() => handleTranslateReply(r.id, r.testo)}
+                            disabled={translatedReplies[r.id]?.loading || translatedReplies[r.id]?.text !== undefined}
+                            className={`p-1 rounded-md transition-colors flex-shrink-0 ${translatedReplies[r.id]?.text ? 'text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10' : 'text-[var(--color-text-faint)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)]'}`}
+                            title="Traduci"
+                          >
+                            {translatedReplies[r.id]?.loading ? (
+                              <div className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                            ) : (
+                              <Globe className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
                       </div>
-                      <span className="text-[10px] text-[var(--color-text-faint)]">{timeAgoI18n(r.created_at, lang)}</span>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -1009,13 +1134,15 @@ export default function ThinkApp() {
                           setReportTestoContenuto(r.testo)
                           setReportOpen(true)
                         }}
-                        className="ml-auto p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-text-faint)] hover:text-red-400"
+                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-text-faint)] hover:text-red-400 flex-shrink-0 mt-[-2px]"
                         title={t('segnala_risposta')}
                       >
-                        <Flag className="w-3 h-3" />
+                        <Flag className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <p className="text-[14px] leading-relaxed font-medium text-[var(--color-text-main)]/90">{r.testo}</p>
+                    <p className={`text-[14px] leading-relaxed font-medium transition-opacity duration-300 break-words ${translatedReplies[r.id]?.loading ? 'opacity-50' : 'text-[var(--color-text-main)]/90'}`}>
+                      {translatedReplies[r.id]?.text || r.testo}
+                    </p>
                   </div>
                 </div>
               ))}
