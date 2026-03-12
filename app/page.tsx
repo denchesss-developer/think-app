@@ -141,6 +141,18 @@ export default function ThinkApp() {
     }
   }
 
+  // User location state for UI feedback
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; regione: string } | null>(null)
+
+  async function updateLocation() {
+    try {
+      const loc = await ottieniCoordinate()
+      setUserLocation(loc)
+    } catch (e) {
+      console.error("Location update failed:", e)
+    }
+  }
+
   async function ottieniCoordinate(): Promise<{ lat: number; lng: number; regione: string }> {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -186,6 +198,9 @@ export default function ThinkApp() {
 
   // Effect Initialization
   useEffect(() => {
+    console.log("Think App v5.5 - Real GPS: ON, Translate UI: UPDATED");
+    updateLocation()
+    
     // Globe Data
     fetch('https://raw.githubusercontent.com/vasturiano/react-globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
       .then(res => res.json()).then(setCountries)
@@ -1137,31 +1152,32 @@ export default function ThinkApp() {
                     <div className="flex items-start justify-between mb-1.5 gap-2">
                       <div className="flex flex-col gap-1 min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[12px] font-bold text-[var(--color-text-main)] truncate">{r.autore}</span>
+                          <span className="text-[12px] font-bold text-[var(--color-text-main)] truncate max-w-[120px]">{r.autore}</span>
+                          
+                          <button
+                            type="button"
+                            onClick={() => handleTranslateReply(r.id, r.testo)}
+                            disabled={translatedReplies[r.id]?.loading || translatedReplies[r.id]?.text !== undefined}
+                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md transition-all ${translatedReplies[r.id]?.text ? 'text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10' : 'text-[var(--color-text-muted)] bg-[var(--color-bg-hover)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-border-subtle)]'}`}
+                            title="Traduci"
+                          >
+                            {translatedReplies[r.id]?.loading ? (
+                              <div className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                            ) : (
+                              <Globe className="w-3 h-3" />
+                            )}
+                            <span className="text-[9px] font-black uppercase tracking-tighter">TR</span>
+                          </button>
+
                           {r.regione && (
                             <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] flex items-center gap-0.5 bg-[var(--color-bg-hover)] px-1.5 py-0.5 rounded-sm whitespace-nowrap">
                               <MapPin className="w-2.5 h-2.5" />
                               {r.regione}
                             </span>
                           )}
-                          
-                          {/* Translate Button for Reply */}
-                          <div className="ml-auto flex items-center gap-2">
-                            <span className="text-[10px] text-[var(--color-text-faint)] whitespace-nowrap">{timeAgoI18n(r.created_at, lang)}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleTranslateReply(r.id, r.testo)}
-                              disabled={translatedReplies[r.id]?.loading || translatedReplies[r.id]?.text !== undefined}
-                              className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${translatedReplies[r.id]?.text ? 'text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10' : 'text-[var(--color-text-faint)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)]'}`}
-                              title="Traduci"
-                            >
-                              {translatedReplies[r.id]?.loading ? (
-                                <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                              ) : (
-                                <Globe className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-[var(--color-text-faint)] whitespace-nowrap">{timeAgoI18n(r.created_at, lang)}</span>
                         </div>
                       </div>
 
@@ -1479,7 +1495,7 @@ export default function ThinkApp() {
         nuovoMessaggio={nuovoMessaggio}
         setNuovoMessaggio={setNuovoMessaggio}
         creaChat={creaChat}
-        cittaSimulata={t('il_tuo_angolo')}
+        cittaSimulata={userLocation?.regione || t('il_tuo_angolo')}
         mostraPopupBenvenuto={mostraPopupBenvenuto}
         setMostraPopupBenvenuto={setMostraPopupBenvenuto}
         utenteLoggato={utenteLoggato}
