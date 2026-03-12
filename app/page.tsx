@@ -141,8 +141,47 @@ export default function ThinkApp() {
     }
   }
 
-  async function ottieniCoordinate() {
-    return { lat: 41.9, lng: 12.4, regione: t('tua_posizione') || 'Europa' }
+  async function ottieniCoordinate(): Promise<{ lat: number; lng: number; regione: string }> {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        // Fallback if geolocation not supported
+        resolve({ lat: 41.9, lng: 12.4, regione: 'Europa' })
+        return
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude
+          const lng = position.coords.longitude
+
+          // Reverse geocode with Nominatim
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=6`,
+              { headers: { 'Accept-Language': 'it' } }
+            )
+            const data = await res.json()
+            const addr = data.address || {}
+            const regione =
+              addr.state ||
+              addr.region ||
+              addr.county ||
+              addr.country ||
+              'Sconosciuta'
+            resolve({ lat, lng, regione })
+          } catch {
+            // If reverse geocoding fails, still use real coords
+            resolve({ lat, lng, regione: 'Sconosciuta' })
+          }
+        },
+        (error) => {
+          console.warn('Geolocation error:', error.message)
+          // Graceful fallback to European coords
+          resolve({ lat: 41.9, lng: 12.4, regione: 'Europa' })
+        },
+        { timeout: 8000, maximumAge: 60000 }
+      )
+    })
   }
 
   // Effect Initialization
