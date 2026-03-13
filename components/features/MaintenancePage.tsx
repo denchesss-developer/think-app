@@ -133,7 +133,7 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
   };
 
   return (
-    <div className="h-[100dvh] bg-[#ffffff] flex flex-col items-center justify-center font-sans overflow-hidden px-6 relative py-8 md:py-16">
+    <div className="h-[100dvh] bg-[#ffffff] flex flex-col items-center justify-between font-sans px-6 relative py-6 md:py-10">
       {/* Beta Access Trigger */}
       <div className="absolute top-4 right-4 z-50">
         <button
@@ -151,7 +151,7 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-20 right-6 z-50 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6"
+            className="absolute top-16 right-4 z-50 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6"
           >
             <div className="flex justify-center items-center gap-2 mb-4">
               <User size={18} className="text-gray-400" />
@@ -182,21 +182,21 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
         )}
       </AnimatePresence>
 
-      <main className="max-w-2xl w-full flex flex-col items-center text-center pt-8">
+      <main className="max-w-2xl w-full flex-1 flex flex-col items-center justify-center text-center min-h-0">
         {/* Entrance Animation Wrap */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="flex flex-col items-center"
+          className="flex flex-col items-center w-full"
         >
           {/* Header */}
-          <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-4 md:mb-6 px-4">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-2 md:mb-4 px-4 whitespace-nowrap">
             Benvenuto su <span className="text-blue-600">Think.</span>
           </h1>
 
           {/* Description Block */}
-          <p className="text-sm md:text-lg lg:text-xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-4 md:mb-8">
+          <p className="text-xs md:text-base lg:text-lg text-gray-600 leading-relaxed max-w-xl mx-auto mb-4 md:mb-6">
             Think è un sito di messaggistica globale in totale anonimato. 
             Nessun profilo, nessuna bio, nessuna foto, nessun follower. 
             Parla di politica, dei tuoi sogni, dei tuoi traumi. 
@@ -205,22 +205,29 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           </p>
 
           {/* Core Visual */}
-          <div className="scale-[0.8] md:scale-110 lg:scale-125 my-2 md:my-8 lg:my-12 transition-transform duration-500">
+          <div className="scale-[0.55] sm:scale-[0.7] md:scale-[0.9] lg:scale-100 my-0 md:my-4 transition-transform duration-500">
             <GlobeVisual />
-          </div>
-
-          {/* Call to Action / Status */}
-          <div className="mt-4 md:mt-8 lg:mt-12 bg-gray-50/80 border border-gray-100 rounded-full px-6 py-3 shadow-sm inline-flex items-center space-x-3 transform scale-90 md:scale-100">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-            </span>
-            <span className="text-sm md:text-base font-medium text-gray-700 tracking-wide uppercase">
-              L&apos;accesso sarà disponibile a breve.
-            </span>
           </div>
         </motion.div>
       </main>
+
+      {/* Footer Area */}
+      <footer className="mt-auto py-2">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="bg-gray-50/80 border border-gray-100 rounded-full px-6 py-2.5 shadow-sm inline-flex items-center space-x-3 transform scale-90 md:scale-100"
+        >
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </span>
+          <span className="text-[10px] md:text-sm font-medium text-gray-700 tracking-wide uppercase">
+            L&apos;accesso sarà disponibile a breve.
+          </span>
+        </motion.div>
+      </footer>
     </div>
   );
 }
