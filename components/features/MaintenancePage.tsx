@@ -87,7 +87,7 @@ function GlobeVisual() {
       {pins.map((pin) => (
         <motion.div
           key={pin.id}
-          className="absolute z-20 flex items-center justify-center gap-2 px-3 h-9 md:h-11 rounded-full bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-gray-100/50 text-gray-700 backdrop-blur-sm whitespace-nowrap"
+          className="absolute z-20 flex items-center justify-center gap-1.5 px-3 h-9 md:h-11 rounded-full bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-gray-100/50 text-gray-700 backdrop-blur-sm"
           style={{ top: pin.top, left: pin.left }}
           animate={{
             y: [-8, 8, -8],
@@ -99,13 +99,8 @@ function GlobeVisual() {
             delay: pin.delay,
           }}
         >
-          <div className="flex flex-col items-start leading-tight">
-            <span className="text-[10px] font-medium text-gray-400">{pin.author}</span>
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] md:text-[0.75rem] font-semibold">{pin.text}</span>
-              <span className="text-sm leading-none">{pin.icon}</span>
-            </div>
-          </div>
+          <span className="text-[11px] md:text-xs font-semibold">{pin.text}</span>
+          <span className="text-sm leading-none">{pin.icon}</span>
         </motion.div>
       ))}
 
