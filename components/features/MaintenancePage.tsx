@@ -139,24 +139,15 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
 
   return (
     <div className="h-[100dvh] bg-[#ffffff] flex flex-col items-center justify-between font-sans px-6 relative py-8 md:py-20 lg:py-24">
-      {/* Beta Access Trigger */}
-      <div className="absolute top-4 right-4 z-50">
-        <button
-          onClick={() => setShowLogin(!showLogin)}
-          className="p-3 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <MoreVertical size={20} />
-        </button>
-      </div>
 
       {/* Beta Login Overlay */}
       <AnimatePresence>
         {showLogin && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-16 right-4 z-50 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6"
           >
             <div className="flex justify-center items-center gap-2 mb-4">
               <User size={18} className="text-gray-400" />
@@ -197,7 +188,10 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
         >
           {/* Header */}
           <h1 className="text-[2.25rem] md:text-[3rem] lg:text-[3.75rem] font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
-            Benvenuto su <span className="text-blue-600">Think.</span>
+            Benvenuto su <span 
+              onClick={() => setShowLogin(!showLogin)} 
+              className="text-blue-600 cursor-pointer select-none"
+            >Think.</span>
           </h1>
 
           {/* Description Block */}
