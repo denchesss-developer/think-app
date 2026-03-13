@@ -16,6 +16,7 @@ import { STILI_STATO, calcolaStatoVitale, MapGlobe } from "@/components/features
 import { ChatCard } from "@/components/features/ChatCard"
 import { AccountView } from "@/components/features/AccountView"
 import { ActivityView } from "@/components/features/ActivityView"
+import { ComposeView } from "@/components/features/ComposeView"
 import { ModalsContainer } from "@/components/features/ModalsContainer"
 import { ReportModal } from "@/components/features/ReportModal"
 import type { AppTheme } from "@/components/features/AccountView"
@@ -47,7 +48,7 @@ function nicknameErrorMessage(nick: string) {
   return ""
 }
 
-type Mode = "feed" | "chat" | "account" | "activity"
+type Mode = "feed" | "chat" | "account" | "activity" | "compose"
 
 export default function ThinkApp() {
   const { lang, setLang, t } = useLang()
@@ -83,7 +84,6 @@ export default function ThinkApp() {
 
   // Modals state
   const [nuovoMessaggio, setNuovoMessaggio] = useState('')
-  const [mostraModaleComponi, setMostraModaleComponi] = useState(false)
 
   const [utenteLoggato, setUtenteLoggato] = useState<Utente | null>(null)
   // Session ID per anonimi
@@ -168,7 +168,6 @@ export default function ThinkApp() {
       const loc = await ottieniCoordinate()
       if (loc.regione === 'Europa' && loc.lat === 41.9) {
         // This is our typical fallback, which usually means it failed
-        // We only show error if it was a real failure vs just being in Rome
         // but for now let's just update the location.
       }
       setUserLocation(loc)
@@ -691,7 +690,7 @@ export default function ThinkApp() {
     if (!nuovoMessaggio.trim()) return
     const mieCoord = await ottieniCoordinate()
 
-    await supabase.from('chats').insert([{
+    const { data: newChat, error } = await supabase.from('chats').insert([{
       titolo: nuovoMessaggio,
       lat: mieCoord.lat,
       lng: mieCoord.lng,
@@ -700,10 +699,18 @@ export default function ThinkApp() {
       autore: utenteLoggato ? (mioNickname || 'Anonimo') : mioNickname,
       user_id: utenteLoggato ? utenteLoggato.id : null,
       ultima_attivita: new Date().toISOString()
-    }])
+    }]).select().single()
 
+    if (error) {
+      console.error("Error creating chat:", error)
+      return
+    }
+
+    // Aggiorna UI locale
+    setChats([newChat, ...chats])
+    setMode("feed")
+    setMobileSheetOpen(false)
     setNuovoMessaggio('')
-    setMostraModaleComponi(false)
   }
 
   async function apriChat(chat: Chat) {
@@ -1127,7 +1134,7 @@ export default function ThinkApp() {
               {/* Loading State for Translation */}
               {translatedSeed.loading && (
                 <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-bg-panel)] border border-[var(--color-border-subtle)] backdrop-blur-md shadow-sm animate-pulse">
-                  <div className="w-3.5 h-3.5 rounded-full border-2 border-[var(--color-text-faint)] border-t-transparent animate-spin" />
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
                   <span className="text-[10px] font-bold tracking-wide text-[var(--color-text-faint)] uppercase">
                     Traduzione in corso...
                   </span>
@@ -1342,7 +1349,7 @@ export default function ThinkApp() {
         footer={
           mode !== "chat" ? (
             <div className="space-y-4">
-              <Button size="lg" className="w-full flex items-center justify-center gap-2" onClick={() => setMostraModaleComponi(true)}>
+              <Button size="lg" className="w-full flex items-center justify-center gap-2" onClick={() => setMode("compose")}>
                 <Plus className="w-5 h-5" strokeWidth={2.5} /> {t('lancia_pensiero')}
               </Button>
             </div>
@@ -1457,6 +1464,20 @@ export default function ThinkApp() {
               lang={lang}
             />
           )}
+          {mode === "compose" && (
+            <ComposeView
+              nuovoMessaggio={nuovoMessaggio}
+              setNuovoMessaggio={setNuovoMessaggio}
+              creaChat={creaChat}
+              mioNickname={mioNickname}
+              setMostraPopupBenvenuto={setMostraPopupBenvenuto}
+              userLocation={userLocation}
+              locationLoading={locationLoading}
+              locationError={locationError}
+              updateLocation={updateLocation}
+              t={t}
+            />
+          )}
         </div>
       </Sidebar>
 
@@ -1464,7 +1485,11 @@ export default function ThinkApp() {
       <BottomNavigation
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        onCompose={() => setMostraModaleComponi(true)}
+        onCompose={() => {
+          setMode("compose")
+          setMobileSheetOpen(true)
+          setActiveTab("home")
+        }}
         isChatMode={mode === "chat"}
         nuovaRisposta={nuovaRisposta}
         setNuovaRisposta={setNuovaRisposta}
@@ -1477,10 +1502,10 @@ export default function ThinkApp() {
         isOpen={mobileSheetOpen}
         onClose={() => {
           setMobileSheetOpen(false)
+          setMode("feed")
           setActiveTab("home")
-          setMode("feed") // resetta lo stato così che la Nav Bar torni indietro
         }}
-        initialPosition="partial"
+        initialPosition={mode === "compose" ? "expanded" : "partial"}
         footer={undefined}
       >
         <div className="pt-0 pb-2">
@@ -1514,6 +1539,21 @@ export default function ThinkApp() {
               lang={lang}
             />
           )}
+
+          {mode === "compose" && (
+            <ComposeView
+              nuovoMessaggio={nuovoMessaggio}
+              setNuovoMessaggio={setNuovoMessaggio}
+              creaChat={creaChat}
+              mioNickname={mioNickname}
+              setMostraPopupBenvenuto={setMostraPopupBenvenuto}
+              userLocation={userLocation}
+              locationLoading={locationLoading}
+              locationError={locationError}
+              updateLocation={updateLocation}
+              t={t}
+            />
+          )}
         </div>
       </MobileSheet>
 
@@ -1529,11 +1569,6 @@ export default function ThinkApp() {
       />
 
       <ModalsContainer
-        mostraModaleComponi={mostraModaleComponi}
-        setMostraModaleComponi={setMostraModaleComponi}
-        nuovoMessaggio={nuovoMessaggio}
-        setNuovoMessaggio={setNuovoMessaggio}
-        creaChat={creaChat}
         mostraPopupBenvenuto={mostraPopupBenvenuto}
         setMostraPopupBenvenuto={setMostraPopupBenvenuto}
         utenteLoggato={utenteLoggato}

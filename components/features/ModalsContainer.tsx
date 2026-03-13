@@ -1,7 +1,7 @@
 import React from "react"
-import { X, Mail, Navigation, Loader2 } from "lucide-react"
+import { X, Mail } from "lucide-react"
 import { Button } from "@/components/ui/Button"
-import { Input, Textarea } from "@/components/ui/Input"
+import { Input } from "@/components/ui/Input"
 import { GlassPanel } from "@/components/ui/Glass"
 
 export const GoogleLogo = () => (
@@ -14,15 +14,9 @@ export const GoogleLogo = () => (
 )
 
 interface ModalsContainerProps {
-  mostraModaleComponi: boolean
-  setMostraModaleComponi: (v: boolean) => void
-  nuovoMessaggio: string
-  setNuovoMessaggio: (v: string) => void
-  creaChat: () => void
-  
   mostraPopupBenvenuto: boolean
   setMostraPopupBenvenuto: (v: boolean) => void
-  utenteLoggato: Utente | null
+  utenteLoggato: any
   mioNickname: string
   setMioNickname: (v: string) => void
   salvaNicknameSoloLocale: () => Promise<{ success?: boolean; error?: string }>
@@ -42,18 +36,12 @@ interface ModalsContainerProps {
   nicknameErrorMessage: (nick: string) => string
 
   t: (key: string) => string
-  userLocation: { lat: number; lng: number; regione: string } | null
-  locationLoading: boolean
-  locationError: string | null
-  updateLocation: () => Promise<void>
 }
 
 export function ModalsContainer({
-  mostraModaleComponi, setMostraModaleComponi, nuovoMessaggio, setNuovoMessaggio, creaChat,
   mostraPopupBenvenuto, setMostraPopupBenvenuto, utenteLoggato, mioNickname, setMioNickname, salvaNicknameSoloLocale,
   mostraPopupLogin, setMostraPopupLogin, loginSent, loginLoading, accediConGoogle, emailLogin, setEmailLogin, inviaMagicLink, loginError,
   mostraPopupNicknameObbligatorio, onCompleteProfile, nicknameErrorMessage,
-  userLocation, locationLoading, locationError, updateLocation,
   t
 }: ModalsContainerProps) {
 
@@ -90,56 +78,7 @@ export function ModalsContainer({
   
   return (
     <>
-      <div className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-md transition-opacity duration-300 ${mostraModaleComponi || (mostraPopupBenvenuto && !utenteLoggato) || (mostraPopupLogin && !utenteLoggato) || mostraPopupNicknameObbligatorio ? "opacity-100" : "opacity-0 pointer-events-none"}`} />
-
-      {/* COMPOSER MODAL */}
-      <div className={`fixed inset-0 z-[101] flex items-center justify-center p-4 sm:p-6 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${mostraModaleComponi ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-8 pointer-events-none"}`}>
-        <GlassPanel className="w-full max-w-2xl p-6 sm:p-8 rounded-[2rem] shadow-2xl relative overflow-hidden bg-[var(--color-bg-base)]/80">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] opacity-10 blur-3xl rounded-full" />
-          
-          <div className="flex justify-between items-center mb-6 relative z-10">
-            <h3 className="font-bold text-sm uppercase tracking-widest text-[var(--color-text-faint)]">{t('nuovo_pensiero')}</h3>
-            <Button variant="icon" size="icon" onClick={() => setMostraModaleComponi(false)} className="rounded-full">
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
-          
-          <Textarea 
-            autoFocus={mostraModaleComponi}
-            placeholder={t('placeholder_componi')} 
-            value={nuovoMessaggio} 
-            onChange={(e) => setNuovoMessaggio(e.target.value)} 
-            className="h-40 xl:h-48 border-none bg-transparent px-0 text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)]"
-          />
-          
-          <div className="flex flex-col gap-3 mt-6 relative z-10 border-t border-[var(--color-border-subtle)] pt-6">
-            {locationError && (
-              <p className="text-red-400 text-[11px] font-bold bg-red-400/10 py-1.5 px-3 rounded-lg border border-red-400/20 mb-1">
-                {locationError}
-              </p>
-            )}
-            
-            <div className="flex justify-between items-center">
-              <button 
-                type="button"
-                onClick={updateLocation}
-                disabled={locationLoading}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all border ${locationLoading ? 'bg-[var(--color-bg-hover)] opacity-70 cursor-wait' : 'bg-[var(--color-bg-hover)] hover:bg-[var(--color-bg-panel)] active:scale-95 border-[var(--color-border-subtle)] hover:border-[var(--color-brand-cyan)]/50'} text-xs font-bold text-[var(--color-text-muted)]`}
-              >
-                {locationLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--color-brand-cyan)]" />
-                ) : (
-                  <Navigation className="w-3.5 h-3.5 text-[var(--color-brand-cyan)]" />
-                )}
-                {userLocation?.regione || t('il_tuo_angolo')}
-              </button>
-              <Button onClick={creaChat} size="lg" className="bg-gradient-to-r from-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] text-white shadow-lg border-none hover:shadow-cyan-500/25 px-10">
-                {t('lancia')}
-              </Button>
-            </div>
-          </div>
-        </GlassPanel>
-      </div>
+      <div className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-md transition-opacity duration-300 ${(mostraPopupBenvenuto && !utenteLoggato) || (mostraPopupLogin && !utenteLoggato) || mostraPopupNicknameObbligatorio ? "opacity-100" : "opacity-0 pointer-events-none"}`} />
 
       {/* WELCOME NICKNAME MODAL */}
       <div className={`fixed inset-0 z-[101] flex items-center justify-center p-4 transition-all duration-500 ease-out ${mostraPopupBenvenuto && !utenteLoggato ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"}`}>
