@@ -49,6 +49,7 @@ import { ChatCard } from "@/components/features/ChatCard"
 import { AccountView } from "@/components/features/AccountView"
 import { ActivityView } from "@/components/features/ActivityView"
 import { ComposeView } from "@/components/features/ComposeView"
+import MaintenancePage from "@/components/features/MaintenancePage"
 import { LocationGuide } from "@/components/features/LocationGuide"
 import { ModalsContainer } from "@/components/features/ModalsContainer"
 import { ReportModal } from "@/components/features/ReportModal"
@@ -92,9 +93,21 @@ export default function ThinkApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mode, setMode] = useState<Mode>("feed")
 
-  // Mobile Navigation State
   const [activeTab, setActiveTab] = useState("home")
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
+
+  // Maintenance / Beta Access State
+  const [hasBetaAccess, setHasBetaAccess] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const access = localStorage.getItem("think_beta_access")
+    setHasBetaAccess(access === "true")
+  }, [])
+
+  const handleAuthorized = () => {
+    localStorage.setItem("think_beta_access", "true")
+    setHasBetaAccess(true)
+  }
 
   const [chats, setChats] = useState<Chat[]>([])
   const [countries, setCountries] = useState<{ features: Record<string, unknown>[] }>({ features: [] })
@@ -1362,6 +1375,11 @@ export default function ThinkApp() {
         setMobileSheetOpen(true)
       }
     }
+  }
+
+  if (hasBetaAccess === null) return null // Wait for hydration
+  if (!hasBetaAccess) {
+    return <MaintenancePage onAuthorized={handleAuthorized} />
   }
 
   return (

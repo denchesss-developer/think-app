@@ -1,8 +1,9 @@
 "use client"
 
 import dynamic from 'next/dynamic'
-import { useRef, useEffect, useMemo, useCallback } from 'react'
+import { useRef, useEffect, useMemo, useCallback, useState } from 'react'
 import * as THREE from 'three'
+import Supercluster from 'supercluster'
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false })
 
@@ -28,7 +29,6 @@ export function calcolaStatoVitale(chat: Chat) {
   if (risposte >= 2 || (oreDallaCreazione > 24 && risposte > 0)) return 'germoglio'
   return 'seme'
 }
-
 interface MapGlobeProps {
   countries: { features: Record<string, unknown>[] }
   chats: Chat[]
@@ -36,6 +36,17 @@ interface MapGlobeProps {
   isDark: boolean
   onMarkerClick: (chat: Chat) => void
   arcsViaggio?: { id: string, startLat: number, startLng: number, endLat: number, endLng: number }[]
+}
+
+// ─── Tipo per elementi visualizzati (Marker o Cluster) ───────────────────────
+type VisualElement = 
+  | { type: 'chat'; id: string; lat: number; lng: number; chat: Chat }
+  | { type: 'cluster'; id: string; lat: number; lng: number; count: number; clusterId: number }
+
+// ─── Utility: Mappa Altitudine -> Zoom (0-20) ────────────────────────────────
+function altitudeToZoom(altitude: number): number {
+  const z = Math.round(Math.log2(3 / altitude) + 1)
+  return Math.max(0, Math.min(20, z))
 }
 
 // ─── Graticola ────────────────────────────────────────────────────────────────
@@ -54,17 +65,6 @@ for (let lng = -180; lng <= 180; lng += GRATICULE_STEP) {
   graticuleLines.push(row)
 }
 
-// ─── Animated position type ───────────────────────────────────────────────────
-interface AnimState {
-  fromLat: number; fromLng: number
-  toLat:   number; toLng:   number
-  start:   number; duration: number
-}
-
-function easeInOut(t: number) {
-  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 export function MapGlobe({
   countries,
@@ -79,13 +79,93 @@ export function MapGlobe({
   const globeRef    = useRef<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elCache     = useRef<Map<string, any>>(new Map())
-  const animMap     = useRef<Map<string, AnimState>>(new Map())
-  const rafRef      = useRef<number | null>(null)
   const horizonRafRef = useRef<number | null>(null)
-  // 'display' positions that we feed to the Globe (lat/lng may differ from DB during animation)
-  const displayRef  = useRef<Map<string, { lat: number, lng: number }>>(new Map())
   // Per-marker lat/lng used by the horizon loop (stable reference)
   const markerLatLng = useRef<Map<string, { lat: number, lng: number }>>(new Map())
+
+  const [zoom, setZoom] = useState(2)
+  const [visualElements, setVisualElements] = useState<VisualElement[]>([])
+
+  // Istanza Supercluster memoizzata
+  const clusterIdx = useMemo(() => {
+    const si = new Supercluster({
+      radius: 35, // Reduced from 60 for better separation
+      maxZoom: 17 // Increased from 15
+    })
+    
+    const points = chats.map(chat => ({
+      type: 'Feature' as const,
+      properties: { chat, cluster: false, chatId: chat.id },
+      geometry: {
+        type: 'Point' as const,
+        coordinates: [chat.lng, chat.lat]
+      }
+    }))
+    
+    si.load(points)
+    return si
+  }, [chats])
+
+  // Aggiorna gli elementi visuali quando cambiano i dati o lo zoom
+  useEffect(() => {
+    const clusters = clusterIdx.getClusters([-180, -90, 180, 90], zoom)
+    
+    const elements: VisualElement[] = []
+    
+    clusters.forEach(c => {
+      const [lng, lat] = c.geometry.coordinates
+      const clusterId = c.id as number
+      
+      if (c.properties.cluster) {
+        // Logica Automatica: Espandi se siamo vicini al limite di zoom o se il cluster è "bloccato"
+        const expansionZoom = clusterIdx.getClusterExpansionZoom(clusterId)
+        
+        // Se siamo vicini (zoom>=15) o se il cluster non si romperebbe mai (expansionZoom > maxZoom)
+        if (zoom >= 15 || expansionZoom > 17) {
+          const leaves = clusterIdx.getLeaves(clusterId, Infinity)
+          const count = leaves.length
+          
+          // Raggio che si riduce mentre zoomi per mantenere i marker vicini ma distinti
+          const radius = 1.0 / Math.pow(2, zoom - 14) 
+          
+          leaves.forEach((leaf, i) => {
+            const angle = (i / count) * Math.PI * 2
+            const offsetLat = Math.cos(angle) * radius
+            const offsetLng = Math.sin(angle) * radius
+            
+            elements.push({
+              type: 'chat',
+              id: leaf.properties.chatId,
+              lat: lat + offsetLat,
+              lng: lng + offsetLng,
+              chat: leaf.properties.chat
+            })
+          })
+        } else {
+          elements.push({
+            type: 'cluster',
+            id: `cluster-${clusterId}`,
+            clusterId,
+            lat,
+            lng,
+            count: c.properties.point_count
+          })
+        }
+      } else {
+        elements.push({
+          type: 'chat',
+          id: String(c.properties.chat.id),
+          lat,
+          lng,
+          chat: c.properties.chat
+        })
+      }
+    })
+    
+    setVisualElements(elements)
+  }, [clusterIdx, zoom])
+
+  // Reset espansioni non più necessario in quanto automatizzato dal calcolo visualElements
 
   // Initial camera
   useEffect(() => {
@@ -155,76 +235,12 @@ export function MapGlobe({
     }
   }, [horizonLoop])
 
-  // Detect position changes and start RAF animation
+  // Manage stale entries in the cache
   useEffect(() => {
-    chats.forEach(chat => {
-      const disp = displayRef.current.get(String(chat.id))
-      const destLat = chat.lat ?? 0
-      const destLng = chat.lng ?? 0
-
-      if (!disp) {
-        // First time we see this chat — set display to current position
-        displayRef.current.set(String(chat.id), { lat: destLat, lng: destLng })
-        return
-      }
-
-      // If position changed and not already animating to this target
-      const existing = animMap.current.get(String(chat.id))
-      const alreadyAnimating = existing && existing.toLat === destLat && existing.toLng === destLng
-      if (!alreadyAnimating && (disp.lat !== destLat || disp.lng !== destLng)) {
-        animMap.current.set(String(chat.id), {
-          fromLat: disp.lat, fromLng: disp.lng,
-          toLat: destLat,    toLng: destLng,
-          start: performance.now(), duration: 8000
-        })
-        if (!rafRef.current) {
-          rafRef.current = requestAnimationFrame(tick)
-        }
-      }
-    })
-
-    // Remove stale display entries
-    const ids = new Set(chats.map(c => String(c.id)))
-    displayRef.current.forEach((_, id) => { if (!ids.has(id)) displayRef.current.delete(id) })
+    const ids = new Set(visualElements.map(c => c.id))
     elCache.current.forEach((_, id) => { if (!ids.has(id)) elCache.current.delete(id) })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chats])
-
-  // RAF loop — interpolates display positions and updates marker elements styles
-  const tick = useCallback((now: number) => {
-    let hasMore = false
-
-    animMap.current.forEach((anim, id) => {
-      const t = Math.min(1, (now - anim.start) / anim.duration)
-      const e = easeInOut(t)
-      const lat = anim.fromLat + (anim.toLat - anim.fromLat) * e
-      const lng = anim.fromLng + (anim.toLng - anim.fromLng) * e
-
-      displayRef.current.set(id, { lat, lng })
-
-      // Move the cached DOM element to the interpolated position using globe's API
-      if (globeRef.current) {
-        const coords = globeRef.current.getCoords?.(lat, lng, 0.015)
-        if (coords) {
-          const el = elCache.current.get(id)
-          if (el) {
-            const pos = globeRef.current.toGlobeCoords?.(lat, lng)
-            if (pos) {
-              el.style.transform = `translate(-50%, -50%) translate3d(${pos.x}px, ${pos.y}px, 0px)`
-            }
-          }
-        }
-      }
-
-      if (t < 1) hasMore = true
-      else {
-        displayRef.current.set(id, { lat: anim.toLat, lng: anim.toLng })
-        animMap.current.delete(id)
-      }
-    })
-
-    rafRef.current = hasMore ? requestAnimationFrame(tick) : null
-  }, [])
+    markerLatLng.current.forEach((_, id) => { if (!ids.has(id)) markerLatLng.current.delete(id) })
+  }, [visualElements])
 
   // Materials computed once per theme change (not every render)
   const globeMaterial = useMemo(
@@ -232,34 +248,89 @@ export function MapGlobe({
     [isDark]
   )
 
-  // Stable marker renderer — only recreates when theme changes
-  const disegnaMarkerGlobo = useCallback((item: Chat): HTMLElement => {
-    let el = elCache.current.get(String(item.id))
+  // Stable marker renderer — handles both single chats and clusters
+  const disegnaMarkerGlobo = useCallback((elData: VisualElement): HTMLElement => {
+    let el = elCache.current.get(elData.id)
 
     if (!el) {
       el = document.createElement('div')
       el.addEventListener('wheel', (e: Event) => e.stopPropagation(), { passive: false })
-
-      el.addEventListener('mousedown', (e: Event) => {
+      
+      const handleClick = (e: Event) => {
         e.stopPropagation()
-        const data: Chat = el.__data
-        if (globeRef.current) globeRef.current.pointOfView({ lat: data.lat, lng: data.lng, altitude: 1.8 }, 800)
-        onMarkerClick(data)
-      })
-      el.addEventListener('touchstart', (e: Event) => {
-        e.stopPropagation()
-        const data: Chat = el.__data
-        if (globeRef.current) globeRef.current.pointOfView({ lat: data.lat, lng: data.lng, altitude: 1.8 }, 800)
-        onMarkerClick(data)
-      }, { passive: false })
+        const data = (el as any).__data as VisualElement
+        
+        if (data.type === 'chat') {
+          if (globeRef.current) globeRef.current.pointOfView({ lat: data.lat, lng: data.lng, altitude: 1.8 }, 800)
+          onMarkerClick(data.chat)
+        } else {
+          // Cluster click: zoom in
+          const expansionZoom = clusterIdx.getClusterExpansionZoom(data.clusterId)
+          const newAltitude = 3 / Math.pow(2, expansionZoom - 1)
+          if (globeRef.current) globeRef.current.pointOfView({ lat: data.lat, lng: data.lng, altitude: Math.max(0.1, newAltitude) }, 1000)
+        }
+      }
 
-      elCache.current.set(String(item.id), el)
+      el.addEventListener('mousedown', handleClick)
+      el.addEventListener('touchstart', handleClick, { passive: false })
+
+      elCache.current.set(elData.id, el)
     }
 
-    el.__data = item
+    (el as any).__data = elData
     // Keep lat/lng current for the horizon-fade RAF loop
-    markerLatLng.current.set(String(item.id), { lat: item.lat ?? 0, lng: item.lng ?? 0 })
+    markerLatLng.current.set(elData.id, { lat: elData.lat, lng: elData.lng })
 
+    if (elData.type === 'cluster') {
+      el.dataset.archived = 'false'
+      el.style.display = ''
+      
+      const size = Math.min(64, 40 + Math.log10(elData.count) * 20)
+      const bgColor = isDark 
+        ? 'rgba(37, 99, 235, 0.85)' 
+        : 'rgba(37, 99, 235, 0.9)'
+      const shadow = isDark ? '0 0 20px rgba(59, 130, 246, 0.5)' : '0 0 20px rgba(37, 99, 235, 0.4)'
+
+      // Inject pulse animation if not exists
+      if (!document.getElementById('globe-cluster-styles')) {
+        const style = document.createElement('style')
+        style.id = 'globe-cluster-styles'
+        style.innerHTML = `
+          @keyframes clusterPulse {
+            0% { box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(59, 130, 246, 0); }
+          }
+          .cluster-inner { animation: clusterPulse 2s infinite; }
+        `
+        document.head.appendChild(style)
+      }
+
+      el.innerHTML = `
+        <div class="cluster-inner" style="
+          width: ${size}px;
+          height: ${size}px;
+          background: ${bgColor};
+          color: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: 900;
+          box-shadow: ${shadow};
+          border: 2px solid rgba(255, 255, 255, 0.4);
+          backdrop-filter: blur(12px);
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        " onmouseover="this.style.transform='scale(1.15)'; this.style.filter='brightness(1.1)'" onmouseout="this.style.transform='scale(1)'; this.style.filter='brightness(1)'">
+          ${elData.count}
+        </div>`
+      return el
+    }
+
+    // Single chat marker logic
+    const item = elData.chat
     const stato = calcolaStatoVitale(item)
     if (stato === 'archivio') {
       el.dataset.archived = 'true'
@@ -298,13 +369,13 @@ export function MapGlobe({
           align-items: center;
           gap: 6px;
           transition: transform 0.3s ease;
-      ">
+      " onmouseover="this.style.transform='scale(${stile.globoScale * 1.1})'" onmouseout="this.style.transform='scale(${stile.globoScale})'">
         <span style="font-size: 1.1em; opacity: 0.9; transform: translateY(-1px); display: inline-block;">${stile.icona}</span> 
         <span>${item.risposte_count > 0 ? item.risposte_count : 'New'}</span>
       </div>`
 
     return el
-  }, [isDark, onMarkerClick])
+  }, [isDark, onMarkerClick, clusterIdx])
 
   return (
     <div className={`absolute top-0 right-0 transition-[left] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center ${sidebarOpen ? "lg:left-[420px]" : "left-0"} max-lg:left-0 lg:bottom-0 max-lg:bottom-[12dvh]`}>
@@ -329,12 +400,14 @@ export function MapGlobe({
         pathDashLength={0}
         pathResolution={2}
         pathStroke={0.5}
+ 
+        onZoom={(pov) => setZoom(altitudeToZoom(pov.altitude))}
 
-        htmlElementsData={chats}
+        htmlElementsData={visualElements}
         htmlLat="lat"
         htmlLng="lng"
-        htmlElement={(d: object) => disegnaMarkerGlobo(d as Chat)}
-        htmlTransitionDuration={8000}
+        htmlElement={(d: any) => disegnaMarkerGlobo(d as VisualElement)}
+        htmlTransitionDuration={2000}
 
         arcsData={arcsViaggio}
         arcStartLat="startLat"
