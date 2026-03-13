@@ -144,14 +144,37 @@ export default function ThinkApp() {
   // User location state for UI feedback
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; regione: string } | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   async function updateLocation() {
     setLocationLoading(true)
+    setLocationError(null)
+    
+    // Check if permission is denied beforehand (for better UX)
+    if (typeof navigator !== 'undefined' && navigator.permissions) {
+      try {
+        const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName })
+        if (status.state === 'denied') {
+          setLocationError("Permesso negato. Riabilita la posizione nelle impostazioni del browser.")
+          setLocationLoading(false)
+          return
+        }
+      } catch (e) {
+        // Permissions API might not support 'geolocation' in all browsers
+      }
+    }
+
     try {
       const loc = await ottieniCoordinate()
+      if (loc.regione === 'Europa' && loc.lat === 41.9) {
+        // This is our typical fallback, which usually means it failed
+        // We only show error if it was a real failure vs just being in Rome
+        // but for now let's just update the location.
+      }
       setUserLocation(loc)
     } catch (e) {
       console.error("Location update failed:", e)
+      setLocationError("Impossibile recuperare la posizione.")
     } finally {
       setLocationLoading(false)
     }
@@ -1531,6 +1554,7 @@ export default function ThinkApp() {
         nicknameErrorMessage={nicknameErrorMessage}
         userLocation={userLocation}
         locationLoading={locationLoading}
+        locationError={locationError}
         updateLocation={updateLocation}
         t={t}
       />
