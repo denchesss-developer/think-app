@@ -1201,10 +1201,8 @@ export default function ThinkApp() {
                 {chatAttiva.autore}
               </span>
               <span className="flex items-center gap-1.5">
-                {(chatAttiva.risposte_count ?? 0) > 0
-                  ? <Plane className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />
-                  : <MapPin className="w-3.5 h-3.5" />
-                }
+                <MapPin className="w-3.5 h-3.5" />
+                {(chatAttiva.risposte_count ?? 0) > 0 && <Plane className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />}
                 {chatAttiva.regione}
               </span>
               <span className="flex items-center gap-1.5">
@@ -1285,7 +1283,7 @@ export default function ThinkApp() {
                             <span className="text-[10px] text-[var(--color-text-faint)] whitespace-nowrap">{timeAgoI18n(node.created_at, lang)}</span>
                           </div>
 
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <div className="flex items-center gap-1 flex-shrink-0">
                             <button
                               type="button"
                               onClick={() => setReplyingTo(node)}

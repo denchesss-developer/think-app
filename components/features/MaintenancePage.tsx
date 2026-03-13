@@ -133,7 +133,7 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
   };
 
   return (
-    <div className="h-[100dvh] bg-[#ffffff] flex flex-col items-center justify-center font-sans overflow-hidden px-6 relative">
+    <div className="h-[100dvh] bg-[#ffffff] flex flex-col items-center justify-center font-sans overflow-hidden px-6 relative py-8 md:py-16">
       {/* Beta Access Trigger */}
       <div className="absolute top-4 right-4 z-50">
         <button
@@ -191,12 +191,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           className="flex flex-col items-center"
         >
           {/* Header */}
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-4 md:mb-8 px-8">
+          <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-4 md:mb-6 px-4">
             Benvenuto su <span className="text-blue-600">Think.</span>
           </h1>
 
           {/* Description Block */}
-          <p className="text-sm md:text-lg lg:text-xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-6 md:mb-12">
+          <p className="text-sm md:text-lg lg:text-xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-4 md:mb-8">
             Think è un sito di messaggistica globale in totale anonimato. 
             Nessun profilo, nessuna bio, nessuna foto, nessun follower. 
             Parla di politica, dei tuoi sogni, dei tuoi traumi. 
@@ -205,12 +205,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           </p>
 
           {/* Core Visual */}
-          <div className="scale-75 md:scale-100 my-4 md:my-12">
+          <div className="scale-[0.8] md:scale-110 lg:scale-125 my-2 md:my-8 lg:my-12 transition-transform duration-500">
             <GlobeVisual />
           </div>
 
           {/* Call to Action / Status */}
-          <div className="mt-4 md:mt-16 bg-gray-50/80 border border-gray-100 rounded-full px-6 py-3 shadow-sm inline-flex items-center space-x-3 transform scale-90 md:scale-100">
+          <div className="mt-4 md:mt-8 lg:mt-12 bg-gray-50/80 border border-gray-100 rounded-full px-6 py-3 shadow-sm inline-flex items-center space-x-3 transform scale-90 md:scale-100">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
