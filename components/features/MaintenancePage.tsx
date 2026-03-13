@@ -40,7 +40,7 @@ function GlobeVisual() {
   }, []);
 
   return (
-    <div className="relative w-64 h-64 md:w-80 md:h-80 mx-auto my-12">
+    <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto my-4 md:my-12">
       {/* 3D Rotating Globe */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-gray-50 to-white overflow-hidden shadow-[inset_-10px_-10px_30px_rgba(0,0,0,0.03),_0_20px_40px_rgba(0,0,0,0.05)] border border-gray-100/50 flex items-center justify-center">
         <ComposableMap
@@ -191,12 +191,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           className="flex flex-col items-center w-full"
         >
           {/* Header */}
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-2 md:mb-4 px-4 whitespace-nowrap">
+          <h1 className="text-2xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-2 md:mb-4 px-4 whitespace-nowrap">
             Benvenuto su <span className="text-blue-600">Think.</span>
           </h1>
 
           {/* Description Block */}
-          <p className="text-xs md:text-base lg:text-lg text-gray-600 leading-relaxed max-w-xl mx-auto mb-4 md:mb-6">
+          <p className="text-[10px] sm:text-xs md:text-base lg:text-lg text-gray-600 leading-relaxed max-w-xl mx-auto mb-2 md:mb-6">
             Think è un sito di messaggistica globale in totale anonimato. 
             Nessun profilo, nessuna bio, nessuna foto, nessun follower. 
             Parla di politica, dei tuoi sogni, dei tuoi traumi. 
@@ -205,7 +205,7 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           </p>
 
           {/* Core Visual */}
-          <div className="scale-[0.55] sm:scale-[0.7] md:scale-[0.9] lg:scale-100 my-0 md:my-4 transition-transform duration-500">
+          <div className="my-2 md:my-8 transition-transform duration-500">
             <GlobeVisual />
           </div>
         </motion.div>
