@@ -133,14 +133,14 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
   };
 
   return (
-    <div className="min-h-screen bg-[#ffffff] flex flex-col items-center justify-center font-sans overflow-hidden px-6 relative">
+    <div className="h-[100dvh] bg-[#ffffff] flex flex-col items-center justify-center font-sans overflow-hidden px-6 relative">
       {/* Beta Access Trigger */}
-      <div className="absolute top-6 right-6 z-50">
+      <div className="absolute top-4 right-4 z-50">
         <button
           onClick={() => setShowLogin(!showLogin)}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="p-3 text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <MoreVertical size={24} />
+          <MoreVertical size={20} />
         </button>
       </div>
 
@@ -182,7 +182,7 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
         )}
       </AnimatePresence>
 
-      <main className="max-w-2xl w-full flex flex-col items-center text-center">
+      <main className="max-w-2xl w-full flex flex-col items-center text-center pt-8">
         {/* Entrance Animation Wrap */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -191,12 +191,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           className="flex flex-col items-center"
         >
           {/* Header */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-4 md:mb-8 px-8">
             Benvenuto su <span className="text-blue-600">Think.</span>
           </h1>
 
           {/* Description Block */}
-          <p className="text-base md:text-lg lg:text-xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-10 md:mb-12">
+          <p className="text-sm md:text-lg lg:text-xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-6 md:mb-12">
             Think è un sito di messaggistica globale in totale anonimato. 
             Nessun profilo, nessuna bio, nessuna foto, nessun follower. 
             Parla di politica, dei tuoi sogni, dei tuoi traumi. 
@@ -205,10 +205,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           </p>
 
           {/* Core Visual */}
-          <GlobeVisual />
+          <div className="scale-75 md:scale-100 my-4 md:my-12">
+            <GlobeVisual />
+          </div>
 
           {/* Call to Action / Status */}
-          <div className="mt-12 md:mt-16 bg-gray-50/80 border border-gray-100 rounded-full px-6 py-3 shadow-sm inline-flex items-center space-x-3">
+          <div className="mt-4 md:mt-16 bg-gray-50/80 border border-gray-100 rounded-full px-6 py-3 shadow-sm inline-flex items-center space-x-3 transform scale-90 md:scale-100">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
