@@ -3,25 +3,29 @@
 import * as deepl from 'deepl-node';
 import { supabase } from '@/lib/supabaseClient';
 
-// Ensure the API key is available. Note: The fallback key here is from the prompt.
-// In a real scenario it should strictly be in .env
-const authKey = process.env.DEEPL_API_KEY || "8db497e2-72e6-463e-a96f-c71b91141fce:fx"; 
+// DeepL API key from environment variables
+const authKey = process.env.DEEPL_API_KEY;
+
+if (!authKey) {
+  throw new Error("DEEPL_API_KEY environment variable is not set");
+}
+
 const translator = new deepl.Translator(authKey);
 
 export async function translateText(
-  text: string, 
-  targetLang: string, 
-  entityId: number, 
+  text: string,
+  targetLang: string,
+  entityId: number,
   entityType: 'chat' | 'reply'
 ) {
   if (!text) return { translatedText: text, sourceLang: targetLang };
-  
+
   // Format targetLang for DeepL (e.g., 'en' might need to be 'en-US' or 'en-GB')
   let dlTargetLang: deepl.TargetLanguageCode = targetLang.toLowerCase() as deepl.TargetLanguageCode;
-  
+
   // DeepL requires specific target language format (e.g., en-US, pt-PT)
   const langUpper = targetLang.toUpperCase();
-  if (langUpper.startsWith('EN')) dlTargetLang = 'en-US'; 
+  if (langUpper.startsWith('EN')) dlTargetLang = 'en-US';
   if (langUpper.startsWith('PT')) dlTargetLang = 'pt-PT';
 
   try {
@@ -35,9 +39,9 @@ export async function translateText(
       .maybeSingle();
 
     if (cached) {
-      return { 
-        translatedText: cached.translated_text, 
-        sourceLang: cached.original_lang 
+      return {
+        translatedText: cached.translated_text,
+        sourceLang: cached.original_lang
       };
     }
 
@@ -76,7 +80,7 @@ export async function translateText(
 
 export async function translateSearchQuery(query: string) {
   if (!query) return query;
-  
+
   try {
     // Translate search queries to English as the "lingua ponte"
     const result = await translator.translateText(query, null, 'en-US');
