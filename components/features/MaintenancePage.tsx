@@ -10,11 +10,11 @@ const geoUrl = "https://unpkg.com/world-atlas@2.0.2/countries-110m.json";
 
 // Floating pins data
 const pins = [
-  { id: 1, text: "3", icon: "🌱", top: "22%", left: "25%", delay: 0 },
-  { id: 2, text: "6", icon: "🌳", top: "45%", left: "68%", delay: 1.5 },
-  { id: 3, text: "7", icon: "🌿", top: "60%", left: "20%", delay: 0.8 },
-  { id: 4, text: "2", icon: "🌱", top: "72%", left: "55%", delay: 2.2 },
-  { id: 5, text: "5", icon: "🌳", top: "18%", left: "60%", delay: 0.5 },
+  { id: 1, author: "Anon", text: "3", icon: "🌱", top: "22%", left: "25%", delay: 0 },
+  { id: 2, author: "Think", text: "6", icon: "🌳", top: "45%", left: "68%", delay: 1.5 },
+  { id: 3, author: "User", text: "7", icon: "🌿", top: "60%", left: "20%", delay: 0.8 },
+  { id: 4, author: "Soul", text: "2", icon: "🌱", top: "72%", left: "55%", delay: 2.2 },
+  { id: 5, author: "Life", text: "5", icon: "🌳", top: "18%", left: "60%", delay: 0.5 },
 ];
 
 /**
@@ -40,7 +40,7 @@ function GlobeVisual() {
   }, []);
 
   return (
-    <div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 mx-auto my-2 md:my-12">
+    <div className="relative w-64 h-64 md:w-80 md:h-80 mx-auto my-4 md:my-12">
       {/* 3D Rotating Globe */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-gray-50 to-white overflow-hidden shadow-[inset_-10px_-10px_30px_rgba(0,0,0,0.03),_0_20px_40px_rgba(0,0,0,0.05)] border border-gray-100/50 flex items-center justify-center">
         <ComposableMap
@@ -87,7 +87,7 @@ function GlobeVisual() {
       {pins.map((pin) => (
         <motion.div
           key={pin.id}
-          className="absolute z-20 flex items-center justify-center gap-1.5 px-3 h-8 md:h-10 rounded-full bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-gray-100/50 text-sm font-medium text-gray-700 backdrop-blur-sm whitespace-nowrap"
+          className="absolute z-20 flex items-center justify-center gap-2 px-3 h-9 md:h-11 rounded-full bg-white/95 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-gray-100/50 text-gray-700 backdrop-blur-sm whitespace-nowrap"
           style={{ top: pin.top, left: pin.left }}
           animate={{
             y: [-8, 8, -8],
@@ -99,8 +99,13 @@ function GlobeVisual() {
             delay: pin.delay,
           }}
         >
-          <span className="font-semibold">{pin.text}</span>
-          <span className="text-base leading-none">{pin.icon}</span>
+          <div className="flex flex-col items-start leading-tight">
+            <span className="text-[10px] font-medium text-gray-400">{pin.author}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] md:text-[0.75rem] font-semibold">{pin.text}</span>
+              <span className="text-sm leading-none">{pin.icon}</span>
+            </div>
+          </div>
         </motion.div>
       ))}
 
@@ -191,12 +196,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           className="flex flex-col items-center w-full"
         >
           {/* Header */}
-          <h1 className="text-[2.25rem] md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
+          <h1 className="text-[2.25rem] md:text-[3rem] lg:text-[3.75rem] font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
             Benvenuto su <span className="text-blue-600">Think.</span>
           </h1>
 
           {/* Description Block */}
-          <p className="text-[1rem] md:text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-4 md:mb-6">
+          <p className="text-[1rem] md:text-[1.125rem] lg:text-[1.25rem] text-gray-600 leading-relaxed max-w-xl mx-auto mb-4 md:mb-6">
             Think è un sito di messaggistica globale in totale anonimato. 
             Nessun profilo, nessuna bio, nessuna foto, nessun follower. 
             Parla di politica, dei tuoi sogni, dei tuoi traumi. 
@@ -239,7 +244,7 @@ function StatusBadge() {
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
         <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
       </span>
-      <span className="text-[0.875rem] md:text-sm font-medium text-gray-700 tracking-wide uppercase">
+      <span className="text-[0.875rem] md:text-[1rem] font-medium text-gray-700 tracking-wide uppercase">
         L&apos;accesso sarà disponibile a breve.
       </span>
     </motion.div>
