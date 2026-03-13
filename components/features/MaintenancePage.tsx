@@ -133,7 +133,7 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
   };
 
   return (
-    <div className="h-[100dvh] bg-[#ffffff] flex flex-col items-center justify-between font-sans px-6 relative py-6 md:py-10">
+    <div className="h-[100dvh] bg-[#ffffff] flex flex-col items-center justify-between font-sans px-6 relative py-8 md:py-20 lg:py-24">
       {/* Beta Access Trigger */}
       <div className="absolute top-4 right-4 z-50">
         <button
@@ -191,12 +191,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           className="flex flex-col items-center w-full"
         >
           {/* Header */}
-          <h1 className="text-2xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-2 md:mb-4 px-4 whitespace-nowrap">
+          <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
             Benvenuto su <span className="text-blue-600">Think.</span>
           </h1>
 
           {/* Description Block */}
-          <p className="text-[10px] sm:text-xs md:text-base lg:text-lg text-gray-600 leading-relaxed max-w-xl mx-auto mb-2 md:mb-6">
+          <p className="text-sm md:text-lg lg:text-xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-0 md:mb-4">
             Think è un sito di messaggistica globale in totale anonimato. 
             Nessun profilo, nessuna bio, nessuna foto, nessun follower. 
             Parla di politica, dei tuoi sogni, dei tuoi traumi. 
@@ -205,7 +205,7 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           </p>
 
           {/* Core Visual */}
-          <div className="my-2 md:my-8 transition-transform duration-500">
+          <div className="scale-75 sm:scale-100 md:scale-110 lg:scale-125 my-0 transition-transform duration-500">
             <GlobeVisual />
           </div>
         </motion.div>
