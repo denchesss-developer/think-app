@@ -1587,10 +1587,6 @@ export default function ThinkApp() {
         mostraPopupNicknameObbligatorio={mostraPopupNicknameObbligatorio}
         onCompleteProfile={handleCompleteProfile}
         nicknameErrorMessage={nicknameErrorMessage}
-        userLocation={userLocation}
-        locationLoading={locationLoading}
-        locationError={locationError}
-        updateLocation={updateLocation}
         t={t}
       />
     </div>
