@@ -191,12 +191,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           className="flex flex-col items-center w-full"
         >
           {/* Header */}
-          <h1 className="text-3xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
+          <h1 className="text-[2.25rem] md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
             Benvenuto su <span className="text-blue-600">Think.</span>
           </h1>
 
           {/* Description Block */}
-          <p className="text-base md:text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-4 md:mb-6">
+          <p className="text-[1rem] md:text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-4 md:mb-6">
             Think è un sito di messaggistica globale in totale anonimato. 
             Nessun profilo, nessuna bio, nessuna foto, nessun follower. 
             Parla di politica, dei tuoi sogni, dei tuoi traumi. 
@@ -239,7 +239,7 @@ function StatusBadge() {
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
         <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
       </span>
-      <span className="text-[10px] md:text-sm font-medium text-gray-700 tracking-wide uppercase">
+      <span className="text-[0.875rem] md:text-sm font-medium text-gray-700 tracking-wide uppercase">
         L&apos;accesso sarà disponibile a breve.
       </span>
     </motion.div>
