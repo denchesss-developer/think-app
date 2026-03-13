@@ -179,11 +179,13 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     in_declino: 'In declino',
     sviluppi: 'Sviluppi',
     nessuna_risposta: 'Nessuna risposta ancora',
-    sii_il_primo: 'Sii il primo a contribuire a questo pensiero.',
+    sii_il_primo: 'Sii il primo ad aggiungere profondità a questo pensiero.',
+    risposta_a: 'Risposta a',
     segnala: 'Segnala',
     condividi: 'Condividi',
     salva: 'Salva',
     segnala_risposta: 'Segnala risposta',
+    placeholder_risposta: 'Aggiungi il tuo sviluppo...',
     rispondi: 'Rispondi...',
 
     // ── Nav / Tabs ──
@@ -289,6 +291,16 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
     // ── ChatCard ──
     condividi_pensiero: 'Condividi pensiero',
+    
+    // ── Location Enforcement & Guide ──
+    come_attivare_posizione: 'Come attivare la posizione?',
+    posizione_necessaria_per_lanciare: 'Devi attivare la tua posizione per lanciare un pensiero.',
+    posizione_necessaria_per_rispondere: 'Attiva la posizione per rispondere.',
+    attiva_posizione: 'Attiva Posizione',
+    guida: 'Guida',
+    guida_posizione_titolo: 'Attiva la Posizione',
+    guida_posizione_desc: "Per garantire l'autenticità dei messaggi su Think, è necessario attivare il GPS. Segui i passaggi per il tuo browser:",
+    capito: 'Capito',
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -309,11 +321,13 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     in_declino: 'Declining',
     sviluppi: 'Developments',
     nessuna_risposta: 'No replies yet',
-    sii_il_primo: 'Be the first to contribute to this thought.',
+    sii_il_primo: 'Be the first to add depth to this thought.',
+    risposta_a: 'Replying to',
     segnala: 'Report',
     condividi: 'Share',
     salva: 'Save',
     segnala_risposta: 'Report reply',
+    placeholder_risposta: 'Add your development...',
     rispondi: 'Reply...',
 
     attivita: 'Activity',
@@ -411,6 +425,16 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     stato_archivio: 'Archive',
 
     condividi_pensiero: 'Share thought',
+
+    // ── Location Enforcement & Guide ──
+    come_attivare_posizione: 'How to enable location?',
+    posizione_necessaria_per_lanciare: 'You must enable your location to post a thought.',
+    posizione_necessaria_per_rispondere: 'Enable location to reply.',
+    attiva_posizione: 'Enable Location',
+    guida: 'Guide',
+    guida_posizione_titolo: 'Enable Location',
+    guida_posizione_desc: 'To ensure authenticity on Think, GPS must be enabled. Follow the steps for your browser:',
+    capito: 'Got it',
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -431,11 +455,13 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     in_declino: 'En déclin',
     sviluppi: 'Développements',
     nessuna_risposta: 'Aucune réponse encore',
-    sii_il_primo: 'Soyez le premier à contribuer à cette pensée.',
+    sii_il_primo: 'Sé le premier à donner de la profondeur à cette pensée.',
+    risposta_a: 'En réponse à',
     segnala: 'Signaler',
     condividi: 'Partager',
     salva: 'Sauvegarder',
     segnala_risposta: 'Signaler la réponse',
+    placeholder_risposta: 'Ajoutez votre développement...',
     rispondi: 'Répondre...',
 
     attivita: 'Activité',
@@ -533,6 +559,16 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     stato_archivio: 'Archives',
 
     condividi_pensiero: 'Partager la pensée',
+
+    // ── Location Enforcement & Guide ──
+    come_attivare_posizione: 'Comment activer la position?',
+    posizione_necessaria_per_lanciare: 'Vous devez activer votre position pour lancer une pensée.',
+    posizione_necessaria_per_rispondere: 'Activez la position pour répondre.',
+    attiva_posizione: 'Activer la Position',
+    guida: 'Guide',
+    guida_posizione_titolo: 'Activer la Position',
+    guida_posizione_desc: "Pour garantir l'authenticité sur Think, le GPS doit être activé. Suivez les étapes pour votre navigateur:",
+    capito: 'Compris',
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -553,11 +589,13 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     in_declino: 'En declive',
     sviluppi: 'Desarrollos',
     nessuna_risposta: 'Sin respuestas aún',
-    sii_il_primo: 'Sé el primero en contribuir a este pensamiento.',
+    sii_il_primo: 'Sé el primero en dar profundidad a este pensamiento.',
+    risposta_a: 'Respondiendo a',
     segnala: 'Reportar',
     condividi: 'Compartir',
     salva: 'Guardar',
     segnala_risposta: 'Reportar respuesta',
+    placeholder_risposta: 'Añade tu desarrollo...',
     rispondi: 'Responder...',
 
     attivita: 'Actividad',
@@ -655,6 +693,16 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     stato_archivio: 'Archivo',
 
     condividi_pensiero: 'Compartir pensamiento',
+
+    // ── Location Enforcement & Guide ──
+    come_attivare_posizione: '¿Cómo activar la ubicación?',
+    posizione_necessaria_per_lanciare: 'Debes activar tu ubicación para lanzar un pensamiento.',
+    posizione_necessaria_per_rispondere: 'Activa la ubicación para responder.',
+    attiva_posizione: 'Activar Ubicación',
+    guida: 'Guía',
+    guida_posizione_titolo: 'Activar la Ubicación',
+    guida_posizione_desc: 'Para garantizar la autenticidad en Think, el GPS debe estar activado. Sigue los pasos para tu navegador:',
+    capito: 'Entendido',
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -675,11 +723,13 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     in_declino: 'Abnehmend',
     sviluppi: 'Entwicklungen',
     nessuna_risposta: 'Noch keine Antworten',
-    sii_il_primo: 'Sei der Erste, der zu diesem Gedanken beiträgt.',
+    sii_il_primo: 'Sei der Erste, der diesem Gedanken Tiefe verleiht.',
+    risposta_a: 'Antwort auf',
     segnala: 'Melden',
     condividi: 'Teilen',
     salva: 'Speichern',
     segnala_risposta: 'Antwort melden',
+    placeholder_risposta: 'Füge deine Entwicklung hinzu...',
     rispondi: 'Antworten...',
 
     attivita: 'Aktivität',
@@ -777,5 +827,15 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     stato_archivio: 'Archiv',
 
     condividi_pensiero: 'Gedanken teilen',
+
+    // ── Location Enforcement & Guide ──
+    come_attivare_posizione: 'Wie aktiviere ich den Standort?',
+    posizione_necessaria_per_lanciare: 'Du musst deinen Standort aktivieren, um einen Gedanken zu posten.',
+    posizione_necessaria_per_rispondere: 'Standort aktivieren, um zu antworten.',
+    attiva_posizione: 'Standort aktivieren',
+    guida: 'Anleitung',
+    guida_posizione_titolo: 'Standort aktivieren',
+    guida_posizione_desc: 'Um die Authentizität auf Think zu gewährleisten, muss GPS aktiviert sein. Folge den Schritten für deinen Browser:',
+    capito: 'Verstanden',
   },
 }

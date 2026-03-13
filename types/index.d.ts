@@ -21,6 +21,7 @@ declare global {
     user_id: string | null;
     created_at: string;
     regione?: string;
+    parent_id?: number | null;
   }
 
   interface Bookmark {

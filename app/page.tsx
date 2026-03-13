@@ -4,7 +4,39 @@ import { useState, useEffect } from "react"
 import { supabase } from '@/lib/supabaseClient'
 import { containsBannedWord } from "@/lib/bannedWords"
 import { useLang, timeAgoI18n, repliesLabel } from "@/lib/i18n"
-import { Search, MessageSquare, Plus, Bookmark, User, Pencil, Send, Clock, TrendingUp, MapPin, Archive, Flag, Plane, Share2, ChevronDown, SlidersHorizontal, FolderArchive, Languages, Globe } from "lucide-react"
+import { 
+  Plus, 
+  Search, 
+  Map as MapIcon, 
+  User, 
+  Bell, 
+  LogOut, 
+  ChevronLeft, 
+  Send, 
+  Bookmark, 
+  MessageSquare, 
+  Share2, 
+  MoreVertical, 
+  Navigation, 
+  Loader2, 
+  Pencil,
+  AlertCircle,
+  HelpCircle,
+  Clock,
+  TrendingUp,
+  MapPin,
+  Archive,
+  Flag,
+  Plane,
+  ChevronDown,
+  SlidersHorizontal,
+  FolderArchive,
+  Languages,
+  Globe,
+  Reply,
+  CornerDownRight,
+  X
+} from "lucide-react"
 
 // Layout Components
 import { Sidebar } from "@/components/layout/Sidebar"
@@ -17,6 +49,7 @@ import { ChatCard } from "@/components/features/ChatCard"
 import { AccountView } from "@/components/features/AccountView"
 import { ActivityView } from "@/components/features/ActivityView"
 import { ComposeView } from "@/components/features/ComposeView"
+import { LocationGuide } from "@/components/features/LocationGuide"
 import { ModalsContainer } from "@/components/features/ModalsContainer"
 import { ReportModal } from "@/components/features/ReportModal"
 import type { AppTheme } from "@/components/features/AccountView"
@@ -76,6 +109,7 @@ export default function ThinkApp() {
 
   const [risposte, setRisposte] = useState<Risposta[]>([])
   const [nuovaRisposta, setNuovaRisposta] = useState('')
+  const [replyingTo, setReplyingTo] = useState<Risposta | null>(null)
 
   const [mioNickname, setMioNickname] = useState('Anonimo')
   const [filtroAttivo, setFiltroAttivo] = useState('Recenti')
@@ -145,6 +179,7 @@ export default function ThinkApp() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; regione: string } | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
+  const [showLocationGuide, setShowLocationGuide] = useState(false)
 
   async function updateLocation() {
     setLocationLoading(true)
@@ -722,6 +757,7 @@ export default function ThinkApp() {
     // Reset translations when opening a new chat
     setTranslatedSeed({ text: '', isTranslated: false, loading: true })
     setTranslatedReplies({})
+    setReplyingTo(null)
     
     // Fetch replies
     const { data } = await supabase.from('risposte').select('*').eq('chat_id', chat.id).order('created_at', { ascending: true })
@@ -754,6 +790,7 @@ export default function ThinkApp() {
     setChatAttiva(null)
     setRisposte([])
     setMode("feed")
+    setReplyingTo(null)
   }
 
   async function handleTranslateReply(replyId: number, originalText: string) {
@@ -782,10 +819,12 @@ export default function ThinkApp() {
       chat_id: chatAttiva.id,
       autore: utenteLoggato ? (mioNickname || 'Anonimo') : mioNickname,
       user_id: utenteLoggato ? utenteLoggato.id : null,
-      regione: mieCoord.regione
+      regione: mieCoord.regione,
+      parent_id: replyingTo?.id || null
     }])
 
     setNuovaRisposta('')
+    setReplyingTo(null)
     const newCount = (chatAttiva.risposte_count ?? 0) + 1
 
     // Move to midpoint between current position and replier's position
@@ -1053,7 +1092,7 @@ export default function ThinkApp() {
     if (!chatAttiva) return null
     const stato = calcolaStatoVitale(chatAttiva)
     return (
-      <div className="fade-in-up sm:animate-in sm:duration-500 pb-6 relative">
+      <div className="fade-in-up sm:animate-in sm:duration-500 pb-24 relative">
         {/* Pensiero Originale — Hero Card */}
         <div className="relative rounded-3xl overflow-hidden mb-6">
           {/* Gradient BG accent */}
@@ -1167,7 +1206,6 @@ export default function ThinkApp() {
         <div>
           <h3 className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-4 ml-1 flex items-center gap-2">
             <MessageSquare className="w-3.5 h-3.5" />
-            {t('sviluppi')}
           </h3>
 
           {risposte.length === 0 ? (
@@ -1179,74 +1217,103 @@ export default function ThinkApp() {
               <p className="text-[var(--color-text-faint)] text-[13px] font-medium">{t('sii_il_primo')}</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {risposte.map(r => (
-                <div
-                  key={r.id}
-                  className="flex gap-3 group"
-                >
-                  {/* Thread line */}
-                  <div className="flex flex-col items-center pt-1 flex-shrink-0">
-                    <div className="w-7 h-7 rounded-full bg-[var(--color-bg-hover)] flex items-center justify-center text-[var(--color-text-faint)]">
-                      <User className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="w-px flex-1 bg-[var(--color-border-subtle)] mt-1.5 opacity-50" />
-                  </div>
+            <div className="space-y-4">
+              {(() => {
+                const buildTree = (replies: Risposta[], parentId: number | null = null): any[] => {
+                  return replies
+                    .filter(r => r.parent_id === parentId)
+                    .map(r => ({ ...r, children: buildTree(replies, r.id) }))
+                }
 
-                  {/* Content */}
-                  <div className="flex-1 pb-4 min-w-0">
-                    <div className="flex items-start justify-between mb-1.5 gap-2">
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[12px] font-bold text-[var(--color-text-main)] truncate max-w-[120px]">{r.autore}</span>
-                          
-                          <button
-                            type="button"
-                            onClick={() => handleTranslateReply(r.id, r.testo)}
-                            disabled={translatedReplies[r.id]?.loading || translatedReplies[r.id]?.text !== undefined}
-                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md transition-all ${translatedReplies[r.id]?.text ? 'text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10' : 'text-[var(--color-text-muted)] bg-[var(--color-bg-hover)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-border-subtle)]'}`}
-                            title="Traduci"
-                          >
-                            {translatedReplies[r.id]?.loading ? (
-                              <div className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                            ) : (
-                              <Globe className="w-3 h-3" />
-                            )}
-                            <span className="text-[9px] font-black uppercase tracking-tighter">TR</span>
-                          </button>
+                const tree = buildTree(risposte)
 
-                          {r.regione && (
-                            <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] flex items-center gap-0.5 bg-[var(--color-bg-hover)] px-1.5 py-0.5 rounded-sm whitespace-nowrap">
-                              <MapPin className="w-2.5 h-2.5" />
-                              {r.regione}
-                            </span>
-                          )}
+                const renderReplyNode = (node: any, depth = 0): React.ReactNode => (
+                  <div key={node.id} className="flex flex-col">
+                    <div className="flex gap-3 group">
+                      {/* Thread line and Avatar */}
+                      <div className="flex flex-col items-center pt-1 flex-shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-[var(--color-bg-hover)] flex items-center justify-center text-[var(--color-text-faint)] ring-1 ring-[var(--color-border-subtle)]">
+                          <User className="w-3.5 h-3.5" />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-[var(--color-text-faint)] whitespace-nowrap">{timeAgoI18n(r.created_at, lang)}</span>
-                        </div>
+                        {node.children.length > 0 && (
+                          <div className="w-px flex-1 bg-[var(--color-border-subtle)] mt-1.5 opacity-50" />
+                        )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setReportChatId(String(chatAttiva.id))
-                          setReportRispostaId(String(r.id))
-                          setReportTestoContenuto(r.testo)
-                          setReportOpen(true)
-                        }}
-                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-text-faint)] hover:text-red-400 flex-shrink-0 mt-[-2px]"
-                        title={t('segnala_risposta')}
-                      >
-                        <Flag className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Content */}
+                      <div className="flex-1 pb-4 min-w-0">
+                        <div className="flex items-start justify-between mb-1 gap-2">
+                          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[12px] font-bold text-[var(--color-text-main)] truncate max-w-[120px]">{node.autore}</span>
+                              
+                              <button
+                                type="button"
+                                onClick={() => handleTranslateReply(node.id, node.testo)}
+                                disabled={translatedReplies[node.id]?.loading || translatedReplies[node.id]?.text !== undefined}
+                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md transition-all ${translatedReplies[node.id]?.text ? 'text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10' : 'text-[var(--color-text-muted)] bg-[var(--color-bg-hover)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-border-subtle)]'}`}
+                                title="Traduci"
+                              >
+                                {translatedReplies[node.id]?.loading ? (
+                                  <div className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                                ) : (
+                                  <Globe className="w-3 h-3" />
+                                )}
+                                <span className="text-[9px] font-black uppercase tracking-tighter">TR</span>
+                              </button>
+
+                              {node.regione && (
+                                <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] flex items-center gap-0.5 bg-[var(--color-bg-hover)] px-1.5 py-0.5 rounded-sm whitespace-nowrap">
+                                  <MapPin className="w-2.5 h-2.5" />
+                                  {node.regione}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-[var(--color-text-faint)] whitespace-nowrap">{timeAgoI18n(node.created_at, lang)}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setReplyingTo(node)}
+                              className="p-1.5 rounded-lg text-[var(--color-text-faint)] hover:text-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/10"
+                              title={t('rispondi')}
+                            >
+                              <Reply className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setReportChatId(String(chatAttiva.id))
+                                setReportRispostaId(String(node.id))
+                                setReportTestoContenuto(node.testo)
+                                setReportOpen(true)
+                              }}
+                              className="p-1.5 rounded-lg text-[var(--color-text-faint)] hover:text-red-400"
+                              title={t('segnala_risposta')}
+                            >
+                              <Flag className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <p className={`text-[14px] leading-relaxed font-medium transition-opacity duration-300 break-words ${translatedReplies[node.id]?.loading ? 'opacity-50' : 'text-[var(--color-text-main)]/90'}`}>
+                          {translatedReplies[node.id]?.text || node.testo}
+                        </p>
+                      </div>
                     </div>
-                    <p className={`text-[14px] leading-relaxed font-medium transition-opacity duration-300 break-words ${translatedReplies[r.id]?.loading ? 'opacity-50' : 'text-[var(--color-text-main)]/90'}`}>
-                      {translatedReplies[r.id]?.text || r.testo}
-                    </p>
+
+                    {/* Children replies */}
+                    {node.children.length > 0 && (
+                      <div className="ml-[14px] pl-4 border-l border-[var(--color-border-subtle)]/50 space-y-2">
+                        {node.children.map((child: any) => renderReplyNode(child, depth + 1))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+
+                return tree.map(r => renderReplyNode(r))
+              })()}
             </div>
           )}
         </div>
@@ -1354,21 +1421,69 @@ export default function ThinkApp() {
               </Button>
             </div>
           ) : (
-            <div className="flex relative items-center gap-2">
-              <Input
-                placeholder={t('rispondi')}
-                value={nuovaRisposta}
-                onChange={(e) => setNuovaRisposta(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && inviaRisposta()}
-                className="pr-14"
-              />
-              <Button
-                onClick={inviaRisposta}
-                size="icon"
-                className="absolute right-1 top-1 bottom-1 w-11 h-11 rounded-xl shadow-lg m-0 flex items-center justify-center"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
+            <div className="p-4 bg-[var(--color-bg-base)]/80 backdrop-blur-md border-t border-[var(--color-border-subtle)]">
+              {(!userLocation || userLocation.regione === 'Europa' || userLocation.regione === t('il_tuo_angolo')) ? (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--color-brand-blue)]/5 border border-[var(--color-brand-blue)]/10">
+                    <AlertCircle className="w-4 h-4 text-[var(--color-brand-blue)] shrink-0" />
+                    <p className="text-[12px] font-bold text-[var(--color-brand-cyan)]/90">
+                      {t('posizione_necessaria_per_rispondere')}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={updateLocation}
+                      disabled={locationLoading}
+                      className="flex-[2] flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--color-brand-blue)]/10 border border-[var(--color-brand-blue)]/20 text-[var(--color-brand-cyan)] text-xs font-black animate-pulse transition-all hover:bg-[var(--color-brand-blue)]/20"
+                    >
+                      {locationLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Navigation className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />}
+                      {t('attiva_posizione')}
+                    </button>
+                    <button 
+                      onClick={() => setShowLocationGuide(true)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--color-bg-hover)] border border-[var(--color-border-subtle)] text-[var(--color-text-faint)] text-[10px] font-bold uppercase tracking-wider hover:text-[var(--color-text-main)] transition-all"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      {t('guida')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {replyingTo && (
+                    <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-[var(--color-brand-blue)]/10 border border-[var(--color-brand-blue)]/20 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="flex items-center gap-2">
+                        <Reply className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />
+                        <span className="text-[11px] font-bold text-[var(--color-brand-blue)]">
+                          {t('risposta_a')} @{replyingTo.autore}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => setReplyingTo(null)}
+                        className="p-1 rounded-full hover:bg-[var(--color-brand-blue)]/20 text-[var(--color-brand-blue)] transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <Input 
+                      placeholder={t('placeholder_risposta')} 
+                      value={nuovaRisposta} 
+                      onChange={(e) => setNuovaRisposta(e.target.value)}
+                      className="flex-1 bg-[var(--color-bg-hover)] border-none h-12 px-4"
+                    />
+                    <Button 
+                      size="icon" 
+                      onClick={inviaRisposta} 
+                      disabled={!nuovaRisposta.trim()}
+                      className="w-12 h-12 rounded-xl bg-gradient-to-r from-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] text-white shadow-lg"
+                    >
+                      <Send className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )
         }
@@ -1475,6 +1590,7 @@ export default function ThinkApp() {
               locationLoading={locationLoading}
               locationError={locationError}
               updateLocation={updateLocation}
+              setShowLocationGuide={setShowLocationGuide}
               t={t}
             />
           )}
@@ -1494,6 +1610,8 @@ export default function ThinkApp() {
         nuovaRisposta={nuovaRisposta}
         setNuovaRisposta={setNuovaRisposta}
         onInviaRisposta={inviaRisposta}
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
         t={t}
       />
 
@@ -1505,7 +1623,7 @@ export default function ThinkApp() {
           setMode("feed")
           setActiveTab("home")
         }}
-        initialPosition={mode === "compose" ? "expanded" : "partial"}
+        initialPosition="partial"
         footer={undefined}
       >
         <div className="pt-0 pb-2">
@@ -1551,6 +1669,7 @@ export default function ThinkApp() {
               locationLoading={locationLoading}
               locationError={locationError}
               updateLocation={updateLocation}
+              setShowLocationGuide={setShowLocationGuide}
               t={t}
             />
           )}
@@ -1587,6 +1706,12 @@ export default function ThinkApp() {
         mostraPopupNicknameObbligatorio={mostraPopupNicknameObbligatorio}
         onCompleteProfile={handleCompleteProfile}
         nicknameErrorMessage={nicknameErrorMessage}
+        t={t}
+      />
+
+      <LocationGuide
+        isOpen={showLocationGuide}
+        onClose={() => setShowLocationGuide(false)}
         t={t}
       />
     </div>
