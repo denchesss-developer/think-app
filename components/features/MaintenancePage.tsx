@@ -191,7 +191,7 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           className="flex flex-col items-center w-full"
         >
           {/* Header */}
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
+          <h1 className="text-3xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
             Benvenuto su <span className="text-blue-600">Think.</span>
           </h1>
 
