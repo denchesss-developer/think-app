@@ -143,13 +143,17 @@ export default function ThinkApp() {
 
   // User location state for UI feedback
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; regione: string } | null>(null)
+  const [locationLoading, setLocationLoading] = useState(false)
 
   async function updateLocation() {
+    setLocationLoading(true)
     try {
       const loc = await ottieniCoordinate()
       setUserLocation(loc)
     } catch (e) {
       console.error("Location update failed:", e)
+    } finally {
+      setLocationLoading(false)
     }
   }
 
@@ -165,33 +169,45 @@ export default function ThinkApp() {
         async (position) => {
           const lat = position.coords.latitude
           const lng = position.coords.longitude
+          console.log("GPS Success:", lat, lng);
 
           // Reverse geocode with Nominatim
           try {
             const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=6`,
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10`,
               { headers: { 'Accept-Language': 'it' } }
             )
             const data = await res.json()
             const addr = data.address || {}
+            
+            // Try different fields for the region
             const regione =
               addr.state ||
               addr.region ||
+              addr.province ||
+              addr.city ||
+              addr.town ||
               addr.county ||
               addr.country ||
               'Sconosciuta'
+              
+            console.log("Region Found:", regione);
             resolve({ lat, lng, regione })
-          } catch {
-            // If reverse geocoding fails, still use real coords
+          } catch (e) {
+            console.error("Reverse Geocode Error:", e)
             resolve({ lat, lng, regione: 'Sconosciuta' })
           }
         },
         (error) => {
-          console.warn('Geolocation error:', error.message)
-          // Graceful fallback to European coords
+          console.warn('Geolocation error:', error.code, error.message)
+          // error.code 1 = Denied, 2 = Unavailable, 3 = Timeout
           resolve({ lat: 41.9, lng: 12.4, regione: 'Europa' })
         },
-        { timeout: 8000, maximumAge: 60000 }
+        { 
+          enableHighAccuracy: true, 
+          timeout: 15000, 
+          maximumAge: 0 
+        }
       )
     })
   }
@@ -1495,7 +1511,6 @@ export default function ThinkApp() {
         nuovoMessaggio={nuovoMessaggio}
         setNuovoMessaggio={setNuovoMessaggio}
         creaChat={creaChat}
-        cittaSimulata={userLocation?.regione || t('il_tuo_angolo')}
         mostraPopupBenvenuto={mostraPopupBenvenuto}
         setMostraPopupBenvenuto={setMostraPopupBenvenuto}
         utenteLoggato={utenteLoggato}
@@ -1514,6 +1529,9 @@ export default function ThinkApp() {
         mostraPopupNicknameObbligatorio={mostraPopupNicknameObbligatorio}
         onCompleteProfile={handleCompleteProfile}
         nicknameErrorMessage={nicknameErrorMessage}
+        userLocation={userLocation}
+        locationLoading={locationLoading}
+        updateLocation={updateLocation}
         t={t}
       />
     </div>

@@ -1,5 +1,5 @@
 import React from "react"
-import { X, Mail } from "lucide-react"
+import { X, Mail, Navigation, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { Input, Textarea } from "@/components/ui/Input"
 import { GlassPanel } from "@/components/ui/Glass"
@@ -19,7 +19,6 @@ interface ModalsContainerProps {
   nuovoMessaggio: string
   setNuovoMessaggio: (v: string) => void
   creaChat: () => void
-  cittaSimulata: string
   
   mostraPopupBenvenuto: boolean
   setMostraPopupBenvenuto: (v: boolean) => void
@@ -43,13 +42,17 @@ interface ModalsContainerProps {
   nicknameErrorMessage: (nick: string) => string
 
   t: (key: string) => string
+  userLocation: { lat: number; lng: number; regione: string } | null
+  locationLoading: boolean
+  updateLocation: () => Promise<void>
 }
 
 export function ModalsContainer({
-  mostraModaleComponi, setMostraModaleComponi, nuovoMessaggio, setNuovoMessaggio, creaChat, cittaSimulata,
+  mostraModaleComponi, setMostraModaleComponi, nuovoMessaggio, setNuovoMessaggio, creaChat,
   mostraPopupBenvenuto, setMostraPopupBenvenuto, utenteLoggato, mioNickname, setMioNickname, salvaNicknameSoloLocale,
   mostraPopupLogin, setMostraPopupLogin, loginSent, loginLoading, accediConGoogle, emailLogin, setEmailLogin, inviaMagicLink, loginError,
   mostraPopupNicknameObbligatorio, onCompleteProfile, nicknameErrorMessage,
+  userLocation, locationLoading, updateLocation,
   t
 }: ModalsContainerProps) {
 
@@ -109,10 +112,19 @@ export function ModalsContainer({
           />
           
           <div className="flex justify-between items-center mt-6 relative z-10 border-t border-[var(--color-border-subtle)] pt-6">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-bg-hover)] text-xs font-bold text-[var(--color-text-muted)] border border-[var(--color-border-subtle)]">
-              <div className="w-2 h-2 rounded-full bg-[var(--color-brand-cyan)] animate-pulse" />
-              {cittaSimulata}
-            </div>
+            <button 
+              type="button"
+              onClick={updateLocation}
+              disabled={locationLoading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all border ${locationLoading ? 'bg-[var(--color-bg-hover)] opacity-70 cursor-wait' : 'bg-[var(--color-bg-hover)] hover:bg-[var(--color-bg-panel)] active:scale-95 border-[var(--color-border-subtle)] hover:border-[var(--color-brand-cyan)]/50'} text-xs font-bold text-[var(--color-text-muted)]`}
+            >
+              {locationLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--color-brand-cyan)]" />
+              ) : (
+                <Navigation className="w-3.5 h-3.5 text-[var(--color-brand-cyan)]" />
+              )}
+              {userLocation?.regione || t('il_tuo_angolo')}
+            </button>
             <Button onClick={creaChat} size="lg" className="bg-gradient-to-r from-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] text-white shadow-lg border-none hover:shadow-cyan-500/25 px-10">
               {t('lancia')}
             </Button>
