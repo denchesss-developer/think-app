@@ -149,6 +149,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
             exit={{ opacity: 0, scale: 0.95 }}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6"
           >
+            <button
+              onClick={() => setShowLogin(false)}
+              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={18} />
+            </button>
             <div className="flex justify-center items-center gap-2 mb-4">
               <User size={18} className="text-gray-400" />
               <h3 className="text-sm font-semibold text-gray-900 uppercase">utenti beta tester</h3>
