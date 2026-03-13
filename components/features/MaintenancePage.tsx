@@ -40,7 +40,7 @@ function GlobeVisual() {
   }, []);
 
   return (
-    <div className="relative w-60 h-60 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto my-2 md:my-12">
+    <div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 mx-auto my-2 md:my-12">
       {/* 3D Rotating Globe */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-gray-50 to-white overflow-hidden shadow-[inset_-10px_-10px_30px_rgba(0,0,0,0.03),_0_20px_40px_rgba(0,0,0,0.05)] border border-gray-100/50 flex items-center justify-center">
         <ComposableMap
@@ -191,12 +191,12 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           className="flex flex-col items-center w-full"
         >
           {/* Header */}
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-2 md:mb-6 px-4 whitespace-nowrap">
             Benvenuto su <span className="text-blue-600">Think.</span>
           </h1>
 
           {/* Description Block */}
-          <p className="text-sm md:text-lg lg:text-xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-2 md:mb-4">
+          <p className="text-base md:text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-xl mx-auto mb-4 md:mb-6">
             Think è un sito di messaggistica globale in totale anonimato. 
             Nessun profilo, nessuna bio, nessuna foto, nessun follower. 
             Parla di politica, dei tuoi sogni, dei tuoi traumi. 
@@ -205,29 +205,43 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
           </p>
 
           {/* Core Visual */}
-          <div className="scale-100 sm:scale-100 md:scale-110 lg:scale-125 my-0 transition-transform duration-500">
+          <div className="scale-100 sm:scale-110 md:scale-110 lg:scale-125 mt-8 mb-4 md:my-0 transition-transform duration-500">
             <GlobeVisual />
+          </div>
+
+          {/* PC Status Area (Visible only on desktop) */}
+          <div className="hidden md:flex mt-4 lg:mt-8">
+            <StatusBadge />
           </div>
         </motion.div>
       </main>
 
-      {/* Footer Area */}
-      <footer className="mt-auto py-2">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="bg-gray-50/80 border border-gray-100 rounded-full px-6 py-2.5 shadow-sm inline-flex items-center space-x-3 transform scale-90 md:scale-100"
-        >
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-          </span>
-          <span className="text-[10px] md:text-sm font-medium text-gray-700 tracking-wide uppercase">
-            L&apos;accesso sarà disponibile a breve.
-          </span>
-        </motion.div>
+      {/* Mobile Footer Area (Visible only on mobile) */}
+      <footer className="md:hidden mt-auto py-2">
+        <StatusBadge />
       </footer>
     </div>
+  );
+}
+
+/**
+ * StatusBadge Component
+ */
+function StatusBadge() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.5 }}
+      className="bg-gray-50/80 border border-gray-100 rounded-full px-6 py-2.5 shadow-sm inline-flex items-center space-x-3 transform scale-90 md:scale-100"
+    >
+      <span className="relative flex h-3 w-3">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+      </span>
+      <span className="text-[10px] md:text-sm font-medium text-gray-700 tracking-wide uppercase">
+        L&apos;accesso sarà disponibile a breve.
+      </span>
+    </motion.div>
   );
 }
