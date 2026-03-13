@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ComposableMap, Geographies, Geography, Sphere, Graticule } from "react-simple-maps";
-import { MoreVertical, X } from "lucide-react";
+import { MoreVertical, X, User } from "lucide-react";
 
 // URL for World Atlas data
 const geoUrl = "https://unpkg.com/world-atlas@2.0.2/countries-110m.json";
@@ -153,8 +153,9 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
             exit={{ opacity: 0, y: -20 }}
             className="absolute top-20 right-6 z-50 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6"
           >
-            <div className="flex justify-center items-center mb-4">
-              <h3 className="text-sm font-semibold text-gray-900">ACCESSO BETATESTER</h3>
+            <div className="flex justify-center items-center gap-2 mb-4">
+              <User size={18} className="text-blue-600" />
+              <h3 className="text-sm font-semibold text-gray-900 uppercase">utenti betatester</h3>
             </div>
             <form onSubmit={handleLogin} className="space-y-4">
               <input
