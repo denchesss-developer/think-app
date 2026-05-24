@@ -1,7 +1,34 @@
 import React from "react"
-import { Navigation, Loader2, Pencil, HelpCircle, AlertCircle } from "lucide-react"
+import { Navigation, Loader2, Pencil, HelpCircle, AlertCircle, MapPin, Search, Plane, Send, X } from "lucide-react"
+import { LocationBadge } from "@/components/ui/LocationBadge"
 import { Button } from "@/components/ui/Button"
 import { Textarea } from "@/components/ui/Input"
+import { useLang, translateRegion } from "@/lib/i18n"
+
+const getCountryEmoji = (code?: string) => {
+  if (!code) return '📍'
+  const cc = code.toUpperCase()
+  if (cc.length !== 2) return '📍'
+  const codePoints = cc.split('').map(c => 127397 + c.charCodeAt(0))
+  try {
+    return String.fromCodePoint(...codePoints)
+  } catch {
+    return '📍'
+  }
+}
+
+const formatLocationName = (item: any) => {
+  if (item?.address) {
+    const parts = []
+    const city = item.address.city || item.address.town || item.address.village || item.address.hamlet || item.address.municipality
+    if (city) parts.push(city)
+    if (item.address.state) parts.push(item.address.state)
+    if (item.address.country) parts.push(item.address.country)
+    
+    if (parts.length > 0) return parts.join(', ')
+  }
+  return item?.display_name?.split(',').filter((p: string) => !/\d/.test(p)).join(',').replace(/\s+/g, ' ').trim() || 'Posizione Sconosciuta'
+}
 
 interface ComposeViewProps {
   nuovoMessaggio: string
@@ -15,6 +42,13 @@ interface ComposeViewProps {
   updateLocation: () => Promise<void>
   setShowLocationGuide: (v: boolean) => void
   t: (key: string) => string
+  // Manual Selection Props
+  manualSearchQuery: string
+  setManualSearchQuery: (v: string) => void
+  manualResults: any[]
+  searchLoading: boolean
+  onSearchCity: (query: string) => void
+  onSelectCity: (item: any) => void
 }
 
 export function ComposeView({
@@ -28,14 +62,45 @@ export function ComposeView({
   locationError,
   updateLocation,
   setShowLocationGuide,
+  manualSearchQuery,
+  setManualSearchQuery,
+  manualResults,
+  searchLoading,
+  onSearchCity,
+  onSelectCity,
   t
 }: ComposeViewProps) {
-  const isLocationActive = userLocation && userLocation.regione !== 'Europa' && userLocation.regione !== t('il_tuo_angolo')
-  
+  const [mostraRicercaManuale, setMostraRicercaManuale] = React.useState(false)
+  const { lang } = useLang()
+  const isLocationActive = !!userLocation?.regione && userLocation.regione !== t('il_tuo_angolo')
+
+  // Detection Utility
+  const env = React.useMemo(() => {
+    if (typeof navigator === 'undefined') return { isIOS: false, isAndroid: false, isDesktop: true }
+    const ua = navigator.userAgent.toLowerCase()
+    const isIOS = /iphone|ipad|ipod/.test(ua)
+    const isAndroid = /android/.test(ua)
+    const isSafari = /safari/.test(ua) && !/chrome|crios|crmo/.test(ua)
+    const isChrome = /chrome|crios|crmo/.test(ua)
+    return { isIOS, isAndroid, isSafari, isChrome, isDesktop: !isIOS && !isAndroid }
+  }, [])
+  // Pre-calculate user location flag & text to remove nested badge
+  const locationLabel: string = userLocation?.regione ? translateRegion(userLocation.regione, lang) : "Aggiungi Posizione"
+  const locParts = locationLabel.trim().split(' ')
+  let locCity = locationLabel
+  let locFlag = ''
+  if (locParts.length > 1) {
+    const lastPart = locParts[locParts.length - 1]
+    if (/[^\p{L}\p{N}]/u.test(lastPart)) {
+      locFlag = lastPart
+      locCity = locParts.slice(0, -1).join(' ')
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Info Account */}
-      <div className="flex items-center gap-2 mb-2 px-1">
+    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32 lg:pb-8">
+      {/* Header Info Account — solo mobile, su desktop c'è già nella sidebar */}
+      <div className="lg:hidden flex items-center gap-2 mb-2 px-1">
         <button
           type="button"
           onClick={() => setMostraPopupBenvenuto(true)}
@@ -47,11 +112,6 @@ export function ComposeView({
         <span className="font-bold text-[14px] text-[var(--color-text-main)]">
           {mioNickname || 'Anonimo'}
         </span>
-        <div className="ml-auto">
-          <h3 className="font-bold text-[10px] uppercase tracking-widest text-[var(--color-text-faint)]">
-            {t('nuovo_pensiero')}
-          </h3>
-        </div>
       </div>
 
       <div className="relative">
@@ -60,72 +120,55 @@ export function ComposeView({
           placeholder={t('placeholder_componi')} 
           value={nuovoMessaggio} 
           onChange={(e) => setNuovoMessaggio(e.target.value)} 
-          className="min-h-[200px] border-none bg-[var(--color-bg-hover)]/30 rounded-2xl p-4 text-[16px] text-[var(--color-text-main)] placeholder:text-[var(--color-text-faint)] focus:ring-1 focus:ring-[var(--color-brand-blue)]/30 transition-all shadow-inner"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              if (nuovoMessaggio.trim() && isLocationActive && !locationLoading) {
+                creaChat();
+              }
+            }
+          }}
+          className="min-h-[200px] bg-[var(--color-bg-panel)]/50 backdrop-blur-md rounded-2xl border border-[var(--glass-border)] p-4 text-[16px] text-[var(--color-text-main)] placeholder:text-[#a1a1aa] outline-none shadow-[inset_0_2px_10px_rgba(0,0,0,0.1)] focus:ring-0 focus:outline-none"
         />
       </div>
       
-      <div className="flex flex-col gap-3 mt-2">
-        {locationError && (
-          <div className="flex flex-col gap-2 p-3 rounded-lg bg-red-400/10 border border-red-400/20">
-            <p className="text-red-400 text-[11px] font-bold">
-              {locationError}
-            </p>
-            {locationError.includes('denied') || locationError.includes('negato') || true && (
-              <button 
-                onClick={() => setShowLocationGuide(true)}
-                className="text-[10px] font-black uppercase tracking-wider text-[var(--color-brand-blue)] hover:text-[var(--color-brand-cyan)] flex items-center gap-1.5 transition-colors"
-              >
-                <HelpCircle className="w-3 h-3" />
-                {t('come_attivare_posizione')}
-              </button>
-            )}
-          </div>
-        )}
 
-        {!isLocationActive && !locationError && !locationLoading && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-brand-blue)]/10 border border-[var(--color-brand-blue)]/20 animate-pulse">
-            <AlertCircle className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />
-            <p className="text-[11px] font-bold text-[var(--color-brand-blue)]/80">
-              {t('posizione_necessaria_per_lanciare')}
-            </p>
-          </div>
-        )}
-        
-        <div className="flex justify-between items-center gap-4">
+
+          <div className="flex justify-between items-center gap-4">
+          {isLocationActive ? (
+            <button 
+              type="button"
+              onClick={updateLocation}
+              disabled={locationLoading}
+              className={`flex items-center gap-2 px-4 py-3 rounded-[1.25rem] transition-all bg-[var(--color-bg-panel)] backdrop-blur-md shadow-[0_8px_16px_-6px_rgba(0,0,0,0.05)] border border-[var(--glass-border)] hover:border-[var(--color-border-strong)] text-[var(--color-text-main)] ${
+                locationLoading ? 'opacity-70 cursor-wait' : 'hover:-translate-y-0.5 active:translate-y-0 active:scale-95'
+              } text-[13px] font-bold flex-1 sm:flex-none justify-center sm:justify-start`}
+            >
+              {locationLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--color-brand-cyan)]" />
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  {locFlag && <span className="text-[15px] leading-none drop-shadow-sm">{locFlag}</span>}
+                  <span className="truncate max-w-[120px] uppercase tracking-tight">{locCity}</span>
+                </div>
+              )}
+            </button>
+          ) : <div />}
+
           <button 
             type="button"
-            onClick={updateLocation}
-            disabled={locationLoading}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all border shadow-sm ${
-              !isLocationActive && !locationLoading 
-                ? 'bg-[var(--color-brand-blue)]/20 border-[var(--color-brand-blue)]/40 text-[var(--color-brand-cyan)] animate-[pulse_2s_infinite]' 
-                : 'bg-[var(--color-bg-hover)] border-[var(--color-border-subtle)] hover:border-[var(--color-brand-cyan)]/50 text-[var(--color-text-muted)]'
-            } ${locationLoading ? 'opacity-70 cursor-wait' : 'hover:bg-[var(--color-bg-panel)] active:scale-95'} text-xs font-bold flex-1 sm:flex-none justify-center sm:justify-start`}
-          >
-            {locationLoading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--color-brand-cyan)]" />
-            ) : (
-              <Navigation className={`w-3.5 h-3.5 ${!isLocationActive ? 'text-[var(--color-brand-blue)]' : 'text-[var(--color-brand-cyan)]'}`} />
-            )}
-            <span className="truncate max-w-[150px]">
-              {userLocation?.regione || t('il_tuo_angolo')}
-            </span>
-          </button>
-
-          <Button 
             onClick={creaChat} 
-            size="lg" 
             disabled={!nuovoMessaggio.trim() || !isLocationActive || locationLoading}
-            className={`shadow-lg border-none px-8 font-black flex-1 sm:flex-none h-[42px] transition-all ${
-              !isLocationActive || !nuovoMessaggio.trim() 
-                ? 'bg-[var(--color-bg-hover)] text-[var(--color-text-faint)] grayscale pointer-events-none' 
-                : 'bg-gradient-to-r from-[var(--color-brand-blue)] to-[var(--color-brand-cyan)] text-white hover:shadow-cyan-500/25'
-            }`}
+            className={`md:hidden flex items-center gap-2 px-8 py-3 rounded-[1.25rem] transition-all ${
+              !isLocationActive || !nuovoMessaggio.trim() || locationLoading
+                ? 'bg-[var(--color-bg-panel)] backdrop-blur-md shadow-[0_8px_16px_-6px_rgba(0,0,0,0.05)] border border-[var(--glass-border)] opacity-40 grayscale pointer-events-none text-[var(--color-text-main)]' 
+                : 'bg-gradient-to-r from-[var(--color-brand-blue)] to-[var(--color-brand-blue)]/80 text-white hover:shadow-[0_10px_20px_rgba(37,99,235,0.3)] border-none hover:-translate-y-0.5 active:translate-y-0 active:scale-95'
+            } text-[13px] font-black flex-1 sm:flex-none justify-center h-[46px]`}
           >
-            {t('lancia')}
-          </Button>
+            INVIA <Send className="w-4 h-4" />
+          </button>
         </div>
       </div>
-    </div>
   )
 }
+

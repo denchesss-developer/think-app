@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Prendiamo i dati dalla nostra cassaforte (.env.local)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-anon-key'
 
-// Creiamo il "telefono" per chiamare Supabase
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.warn('[Think] Supabase env vars are missing. Using placeholder values until env is configured.')
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)

@@ -1,106 +1,292 @@
-import React from "react"
+"use client"
+
+import React, { useState, useEffect, useCallback } from "react"
 import { GlassCard } from "@/components/ui/Glass"
-import { Badge } from "@/components/ui/Badge"
-import { MapPin, MessageCircle, Clock, Plane, Share2 } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  MapPin, Clock, Plane, ArrowRight, RotateCcw,
+  MoreHorizontal, X, Bookmark, Share2, Flag,
+  Pencil, Trash2, User
+} from "lucide-react"
 import { calcolaStatoVitale, STILI_STATO } from "@/components/features/MapGlobe"
 import { timeAgoI18n, translateRegion, type Lang } from "@/lib/i18n"
 
-export function ChatCard({ chat, onClick, t, lang }: { chat: Chat, onClick: (chat: Chat) => void, t: (k: string) => string, lang: Lang }) {
-  const count = chat.risposte_count ?? 0
-  const hasReplies = count > 0
-  const stato = calcolaStatoVitale(chat)
-  const stile = STILI_STATO[stato]
-  const isSbiadita = stato === 'foglia_secca'
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-  /* Determine badge variant based on state */
-  let badgeVariant: "seed" | "sprout" | "tree" | "faded" | "archived" | "premium" = "seed"
-  if (stato === "germoglio") badgeVariant = "sprout"
-  if (stato === "albero") badgeVariant = "tree"
-  if (stato === "foglia_secca") badgeVariant = "faded"
-  if (stato === "archivio") badgeVariant = "archived"
-
-  // Localised state name
-  const stateNameMap: Record<string, string> = {
-    seme: t('stato_nuova'),
-    germoglio: t('stato_crescita'),
-    albero: t('stato_popolare'),
-    foglia_secca: t('stato_inattiva'),
-    archivio: t('stato_archivio'),
-  }
-  const stateName = stateNameMap[stato] || stile.nome
-
-  async function condividi(e: React.MouseEvent) {
-    e.stopPropagation() // Don't open the chat
-    const url = `${window.location.origin}?thought=${chat.id}`
-    const text = `"${chat.titolo}" — da ${translateRegion(chat.regione, lang) || 'Think'}`
-
-    if (navigator.share) {
-      await navigator.share({ title: 'Think', text, url }).catch(() => {})
-    } else {
-      await navigator.clipboard.writeText(`${text}\n${url}`)
-      // Brief visual feedback — swap icon content
-      const btn = e.currentTarget as HTMLElement
-      btn.textContent = '✓'
-      setTimeout(() => { btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>' }, 1500)
+/** Splits "Verona 🇮🇹" into { name: "Verona", flag: "🇮🇹" } */
+function splitRegionFlag(region: string): { name: string; flag: string } {
+  if (!region) return { name: '', flag: '' }
+  const parts = region.trim().split(' ')
+  if (parts.length > 1) {
+    const last = parts[parts.length - 1]
+    // Emoji characters are > U+FFFF or in flag range
+    if (/\p{Emoji}/u.test(last)) {
+      return { name: parts.slice(0, -1).join(' '), flag: last }
     }
   }
+  return { name: region, flag: '' }
+}
+
+// ─── Vital state colour tokens ─────────────────────────────────────────────────
+const STATO_STYLE: Record<string, { bg: string; text: string; border: string }> = {
+  seme:       { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' },
+  germoglio:  { bg: 'bg-green-500/10',   text: 'text-green-400',   border: 'border-green-500/20' },
+  albero:     { bg: 'bg-amber-500/10',   text: 'text-amber-400',   border: 'border-amber-500/20' },
+  foglia_secca: { bg: 'bg-orange-500/8', text: 'text-orange-400/70', border: 'border-orange-500/15' },
+  archivio:   { bg: 'bg-indigo-500/10',  text: 'text-indigo-400',  border: 'border-indigo-500/20' },
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+interface ChatCardProps {
+  chat: Chat
+  onClick: (chat: Chat) => void
+  t: (k: string) => string
+  lang: Lang
+  compact?: boolean
+  isEditable?: boolean
+  isSaved?: boolean
+  onEdit?: (chat: Chat) => void
+  onDelete?: (chat: Chat) => void
+  onSave?: (chat: Chat) => void
+  onShare?: (chat: Chat) => void
+  onReport?: (chat: Chat) => void
+}
+
+export function ChatCard({
+  chat,
+  onClick,
+  t,
+  lang,
+  compact = false,
+  isEditable = false,
+  isSaved = false,
+  onEdit,
+  onDelete,
+  onSave,
+  onShare,
+  onReport,
+}: ChatCardProps) {
+  const count = chat.risposte_count ?? 0
+  const stato = calcolaStatoVitale(chat)
+  const stile = STILI_STATO[stato]
+  const statoStyle = STATO_STYLE[stato] ?? STATO_STYLE.archivio
+  const isSbiadita = stato === 'foglia_secca'
+  // NEW: flag to determine if it's an archived news item
+  const isNewsArchived = chat.tipo === 'domanda_notizia' && stato === 'archivio'
+
+  // 5-minute edit window
+  const [canEditWindow, setCanEditWindow] = useState(false)
+  useEffect(() => {
+    const elapsed = Date.now() - new Date(chat.created_at).getTime()
+    setCanEditWindow(elapsed <= 5 * 60 * 1000)
+  }, [chat.created_at])
+
+  // Action menu open state
+  const [menuAperto, setMenuAperto] = useState(false)
+
+  const handleCardClick = useCallback(() => {
+    if (menuAperto) return
+    onClick(chat)
+  }, [menuAperto, onClick, chat])
+
+  // Geo info
+  const origRegione = translateRegion(chat.regione_originale || chat.regione, lang)
+  const currRegione = translateRegion(chat.regione, lang)
+  const origCitta = chat.citta_nome || origRegione
+  const { name: origName, flag: origFlag } = splitRegionFlag(origRegione)
+  const { name: currName, flag: currFlag } = splitRegionFlag(currRegione)
+
+  const hasTravel =
+    chat.regione_originale &&
+    chat.regione_originale !== chat.regione
 
   return (
-    <div 
-      className={`relative mb-5 cursor-pointer group transition-all duration-500 ease-out ${isSbiadita ? 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0' : 'opacity-100'}`} 
-      onClick={() => onClick(chat)}
+    <div
+      className="relative mb-4 cursor-pointer group"
+      onClick={handleCardClick}
     >
-      {/* Stacked Cards Effect for Threads */}
-      {hasReplies && (
-        <>
-          <div className="absolute inset-0 translate-y-3 translate-x-1.5 rounded-2xl bg-[var(--color-bg-panel)] border border-[var(--color-border-subtle)] opacity-50 transition-transform group-hover:translate-y-4 group-hover:translate-x-2" />
-          <div className="absolute inset-0 translate-y-1.5 translate-x-0.5 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] opacity-70 transition-transform group-hover:translate-y-2 group-hover:translate-x-1" />
-        </>
-      )}
-      
-      <GlassCard className="relative z-10 transition-transform duration-300 group-hover:-translate-y-1 group-active:translate-y-0 group-active:scale-[0.98]">
+      <GlassCard
+        className={`relative z-10 transition-transform duration-300 group-hover:-translate-y-0.5 group-active:scale-[0.99] ${
+          compact ? '!p-4' : 'p-5'
+        } flex flex-col gap-0 overflow-hidden`}
+      >
+
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[15px] font-bold tracking-tight text-[var(--color-text-main)]">
-            {chat.autore}
-          </span>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-bg-hover)] text-[var(--color-text-muted)]">
-            <MapPin className="w-3.5 h-3.5" />
-            {hasReplies && <Plane className="w-3.5 h-3.5 text-[var(--color-brand-blue)]" />}
-            <span className="text-[10px] font-bold tracking-widest uppercase">{translateRegion(chat.regione, lang)}</span>
-          </div>
+
+          {/* Author side — hidden when menu open */}
+          <AnimatePresence mode="wait">
+            {!menuAperto ? (
+              <motion.div
+                key="author"
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.15 }}
+                className="flex items-center gap-1.5 min-w-0"
+              >
+                <div className="w-5 h-5 rounded-full bg-[var(--color-bg-hover)] flex items-center justify-center text-[var(--color-text-muted)] shrink-0 opacity-70">
+                  <User className="w-3 h-3" />
+                </div>
+                <span className="text-[12px] font-bold tracking-tight text-[var(--color-text-muted)] truncate">
+                  {chat.autore}
+                </span>
+              </motion.div>
+            ) : (
+              /* Action icons row */
+              <motion.div
+                key="actions"
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.15 }}
+                className="flex items-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Bookmark */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onSave?.(chat); }}
+                  className={`p-2 rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors ${isSaved ? 'text-amber-500 bg-amber-500/10' : 'text-[var(--color-text-muted)] hover:text-amber-500'}`}
+                  title={t('salva') || 'Salva'}
+                >
+                  <Bookmark className="w-4 h-4" fill={isSaved ? "currentColor" : "none"} />
+                </button>
+
+                {/* Share */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onShare?.(chat); }}
+                  className="p-2 rounded-xl hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-emerald-400 transition-colors"
+                  title={t('condividi') || 'Condividi'}
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+
+                {/* Report */}
+                <button
+                  onClick={() => { onReport?.(chat); setMenuAperto(false) }}
+                  className="p-2 rounded-xl hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
+                  title={t('segnala') || 'Segnala'}
+                >
+                  <Flag className="w-4 h-4" />
+                </button>
+
+                {/* Edit — only within 5 min window */}
+                {isEditable && canEditWindow && onEdit && (
+                  <button
+                    onClick={() => { onEdit(chat); setMenuAperto(false) }}
+                    className="p-2 rounded-xl hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-amber-400 transition-colors"
+                    title={t('modifica') || 'Modifica (5 min)'}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Delete — only within 5 min window */}
+                {isEditable && canEditWindow && onDelete && (
+                  <button
+                    onClick={() => { onDelete(chat); setMenuAperto(false) }}
+                    className="p-2 rounded-xl hover:bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
+                    title={t('elimina') || 'Elimina (5 min)'}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Right side: ··· or ✕ */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setMenuAperto(!menuAperto) }}
+            className={`p-2 rounded-xl transition-all shrink-0 ml-2 ${
+              menuAperto
+                ? 'bg-[var(--color-bg-hover)] text-[var(--color-text-main)]'
+                : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-main)]'
+            }`}
+          >
+            {menuAperto
+              ? <X className="w-4 h-4" />
+              : <MoreHorizontal className="w-4 h-4" />
+            }
+          </button>
         </div>
-        
-        <p className="text-[15px] leading-relaxed mb-5 font-medium text-[var(--color-text-main)] opacity-90">
+
+        {/* ── CONTENT ────────────────────────────────────────────────────── */}
+        <p className={`${compact ? 'text-[14px] line-clamp-2' : 'text-[15px] line-clamp-3'} leading-relaxed font-semibold text-[var(--color-text-main)] mb-4`}>
           {chat.titolo}
         </p>
 
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--color-border-subtle)]">
-          <div className="flex items-center gap-2">
-            <Badge variant={badgeVariant} icon={stile.icona}>
-              <span className="hidden xs:inline ml-1 text-[10px]">{stateName}</span>
-            </Badge>
-            
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-widest bg-[var(--color-bg-hover)] border-[var(--color-border-subtle)] text-[var(--color-text-muted)]">
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span>{count}</span>
-            </div>
-
-            {/* Share button — same height as Badge */}
-            <button
-              type="button"
-              onClick={condividi}
-              className="inline-flex items-center justify-center px-2.5 py-1 rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-hover)] hover:bg-[var(--color-brand-blue)]/20 text-[var(--color-text-muted)] hover:text-[var(--color-brand-blue)] transition-all duration-200"
-              title={t('condividi_pensiero')}
-            >
-              <Share2 className="w-3.5 h-3.5" />
-            </button>
+        {/* ── GEO ROW ────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          {/* Origin */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <MapPin className="w-3 h-3 shrink-0 text-[var(--color-text-muted)]" />
+            {origFlag && <span className="text-[13px] leading-none">{origFlag}</span>}
+            <span className="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] truncate">
+              {origName || origCitta}
+            </span>
           </div>
-          
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-faint)]">
-            <Clock className="w-3.5 h-3.5" />
+
+          {/* Arrow — only show if there was actual travel */}
+          {hasTravel && (
+            <ArrowRight className="w-3 h-3 shrink-0 text-blue-500/60" />
+          )}
+
+          {/* Destination — only if different from origin */}
+          {hasTravel && (
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Plane className="w-3 h-3 shrink-0 text-[var(--color-text-muted)]" />
+              {currFlag && <span className="text-[13px] leading-none">{currFlag}</span>}
+              <span className="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] truncate">
+                {currName}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* ── DIVIDER ────────────────────────────────────────────────────── */}
+        <div className="h-px w-full bg-[var(--color-text-main)]/[0.06] mb-3" />
+
+        {/* ── FOOTER ─────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-2">
+
+          {/* Left badges */}
+          <div className="flex items-center gap-2">
+            {/* Vital cycle badge - Specific handling for Archived News */}
+            {isNewsArchived ? (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border bg-zinc-500/10 text-zinc-500 border-zinc-500/20 text-[10px] font-black uppercase tracking-widest">
+                <span className="text-[12px] leading-none opacity-60">📰</span>
+                <span>Archiviato</span>
+              </div>
+            ) : (
+              <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-black uppercase tracking-widest ${statoStyle.bg} ${statoStyle.border}`}>
+                <span className={`text-[12px] leading-none ${statoStyle.text}`}>{chat.tipo === 'domanda_notizia' ? '📰' : stile.icona}</span>
+                <span className="text-[var(--color-text-muted)]">{count}</span>
+              </div>
+            )}
+
+            {/* Revive badge — only if > 0 */}
+            {(chat.revive_count && chat.revive_count > 0) ? (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border bg-blue-500/8 text-blue-400/80 border-blue-500/15 text-[11px] font-black uppercase tracking-widest">
+                <RotateCcw className="w-3 h-3" />
+                <span>{chat.revive_count}</span>
+              </div>
+            ) : null}
+
+            {/* KM Badge — fixed color */}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border bg-zinc-500/8 text-[var(--color-text-muted)] border-zinc-500/10 text-[11px] font-black uppercase tracking-widest">
+              <Plane className="w-3 h-3 opacity-60" />
+              <span>{Math.round(chat.km_viaggiati)} KM</span>
+            </div>
+          </div>
+
+          {/* Timestamp */}
+          <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] shrink-0">
+            <Clock className="w-3 h-3" />
             <span>{timeAgoI18n(chat.ultima_attivita || chat.created_at, lang)}</span>
           </div>
         </div>
+
       </GlassCard>
     </div>
   )

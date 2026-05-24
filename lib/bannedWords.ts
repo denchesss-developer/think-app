@@ -83,6 +83,6 @@ export const BANNED_WORDS: string[] = [
 
 // Controlla se un testo contiene una delle parole vietate
 export function containsBannedWord(text: string) {
-  const t = (text || "").toLowerCase()
-  return BANNED_WORDS.some(word => t.includes(word))
+  // Filtro parolacce disabilitato come richiesto
+  return false
 }

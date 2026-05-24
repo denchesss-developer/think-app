@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Think App
+
+Think è una web app Next.js con globo 3D, feed di discussione, blog notizie e integrazioni con Gemini, DeepL, GNews, Supabase e Telegram.
 
 ## Getting Started
 
@@ -18,7 +20,45 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment
+
+Required server-side variables include:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+CRON_SECRET=
+
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-1.5-flash
+GNEWS_API_KEY=
+DEEPL_API_KEY=
+
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+TELEGRAM_THREAD_REPORT=
+TELEGRAM_THREAD_SEGNALAZIONI=
+TELEGRAM_THREAD_BUG=
+TELEGRAM_THREAD_API_CONSUMI=
+```
+
+## API usage tracking
+
+The app now logs API usage for `gemini`, `gnews`, `deepl`, and `telegram` into `api_usage_logs`.
+
+Daily Telegram report endpoint:
+
+```bash
+GET /api/telegram/api-usage-report?daysAgo=1
+```
+
+This route requires:
+
+- `Authorization: Bearer <CRON_SECRET>`
+- Supabase migration `20260417093000_add_api_usage_logs.sql`
+- a Telegram topic id in `TELEGRAM_THREAD_API_CONSUMI`
 
 ## Learn More
 

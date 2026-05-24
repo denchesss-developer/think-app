@@ -77,7 +77,7 @@ export function MobileSheet({
     // allow drag only downward
     if (delta > 0) setDragDelta(delta)
     // upward drag: expand
-    else if (position === "partial" && delta < -80) {
+    else if (position === "partial" && delta < -50) {
       setDragDelta(0)
       setPosition("expanded")
       isDragging.current = false
@@ -87,7 +87,7 @@ export function MobileSheet({
   const onTouchEnd = () => {
     if (!isDragging.current) return
     isDragging.current = false
-    if (dragDelta > 100) {
+    if (dragDelta > 80) {
       if (position === "expanded") {
         setPosition("partial")
         setDragDelta(0)

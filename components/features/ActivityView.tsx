@@ -3,17 +3,33 @@
 import React from "react"
 import { Pencil, MessageSquare, Bookmark, Clock, Flame } from "lucide-react"
 import { Button } from "@/components/ui/Button"
-import { timeAgoI18n, translateRegion, type Lang } from "@/lib/i18n"
+import { translateRegion, type Lang } from "@/lib/i18n"
 
 interface ActivityViewProps {
-  utenteLoggato: Utente | null
-  myThinks: Chat[]
-  myRepliedChats: Chat[]
-  bookmarks: Bookmark[]
-  accountLoading: boolean
-  apriChat: (c: Chat) => void
-  t: (key: string) => string
-  lang: Lang
+   utenteLoggato: Utente | null
+   myThinks: Chat[]
+   myRepliedChats: Chat[]
+   bookmarks: Bookmark[]
+   accountLoading: boolean
+   apriChat: (c: Chat) => void
+   t: (key: string) => string
+   lang: Lang
+   onEdit?: (c: Chat) => void
+   onDelete?: (c: Chat) => void
+}
+
+function getActivityStats(chat: Chat, lang: Lang, t: (k: string) => string) {
+  const giorni = Math.floor((Date.now() - new Date(chat.created_at).getTime()) / (1000 * 60 * 60 * 24))
+  const vitaLabel = giorni === 0 ? t('today') : `${giorni}${lang === 'it' ? 'g' : lang === 'de' ? ' T' : 'd'}`
+  const haUltimaAtt = chat.ultima_attivita && chat.ultima_attivita !== chat.created_at
+  const gapRinascita = haUltimaAtt
+    ? Math.floor((new Date(chat.ultima_attivita!).getTime() - new Date(chat.created_at).getTime()) / (1000 * 60 * 60 * 24 * 7))
+    : 0
+
+  return {
+    vitaLabel,
+    rinascite: Math.max(0, gapRinascita)
+  }
 }
 
 export function ActivityView({
@@ -26,7 +42,6 @@ export function ActivityView({
   t,
   lang,
 }: ActivityViewProps) {
-
   if (!utenteLoggato) {
     return (
       <div className="space-y-8 pb-10 fade-in-up animate-in duration-500">
@@ -71,7 +86,6 @@ export function ActivityView({
         </p>
       </div>
 
-      {/* I miei Pensieri — con statistiche */}
       <ActivitySection
         icon={<Pencil className="w-4 h-4" />}
         title={t('miei_pensieri')}
@@ -83,7 +97,6 @@ export function ActivityView({
         t={t}
       />
 
-      {/* Le mie Risposte */}
       <ActivitySection
         icon={<MessageSquare className="w-4 h-4" />}
         title={t('mie_risposte')}
@@ -94,7 +107,6 @@ export function ActivityView({
         t={t}
       />
 
-      {/* Pensieri Salvati */}
       <ActivitySection
         icon={<Bookmark className="w-4 h-4" />}
         title={t('pensieri_salvati')}
@@ -108,7 +120,7 @@ export function ActivityView({
   )
 }
 
-function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats, lang, t }: { 
+function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats, lang, t }: {
   icon: React.ReactNode
   title: string
   items: Chat[]
@@ -119,6 +131,7 @@ function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats, la
   t: (k: string) => string
 }) {
   const validItems = items.filter(Boolean)
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-4 ml-1">
@@ -137,13 +150,7 @@ function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats, la
       ) : (
         <div className="space-y-2">
           {validItems.map((c, idx) => {
-            const giorni = Math.floor((Date.now() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24))
-            const vitaLabel = giorni === 0 ? t('today') : `${giorni}${lang === 'it' ? 'g' : lang === 'de' ? ' T' : 'd'}`
-            const haUltimaAtt = c.ultima_attivita && c.ultima_attivita !== c.created_at
-            const gapRinascita = haUltimaAtt
-              ? Math.floor((new Date(c.ultima_attivita!).getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24 * 7))
-              : 0
-            const rinascite = Math.max(0, gapRinascita)
+            const { vitaLabel, rinascite } = getActivityStats(c, lang, t)
 
             return (
               <button
@@ -158,19 +165,16 @@ function ActivitySection({ icon, title, items, onSelect, emptyMsg, showStats, la
 
                   {showStats && (
                     <>
-                      {/* Risposte ricevute */}
                       <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-text-muted)] bg-[var(--color-bg-hover)] px-2 py-0.5 rounded-full">
                         <MessageSquare className="w-3 h-3" />
                         {c.risposte_count || 0}
                       </span>
 
-                      {/* Vita del pensiero */}
                       <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-text-muted)] bg-[var(--color-bg-hover)] px-2 py-0.5 rounded-full">
                         <Clock className="w-3 h-3" />
                         {vitaLabel}
                       </span>
 
-                      {/* Rinascite */}
                       {rinascite > 0 && (
                         <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
                           <Flame className="w-3 h-3" />

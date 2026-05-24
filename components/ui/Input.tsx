@@ -39,9 +39,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
     return (
       <textarea
         className={cn(
-          "flex min-h-[120px] w-full rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-panel)] px-5 py-4 text-[15px] xl:text-[22px] font-medium transition-all outline-none resize-none",
+          "flex min-h-[120px] w-full rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-panel)] px-5 py-4 text-[15px] xl:text-[22px] font-medium transition-colors outline-none focus:outline-none resize-none",
           "placeholder:text-[var(--color-text-faint)]",
-          "focus-visible:border-[var(--color-border-strong)] focus-visible:bg-[var(--color-bg-card)]",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}

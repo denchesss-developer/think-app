@@ -10,8 +10,7 @@ export function GlassPanel({ children, className, variant = "panel", ...props }:
   return (
     <div
       className={cn(
-        variant === "panel" ? "glass-panel" : "glass-card",
-        "transition-all duration-300",
+        "glass-monolith transition-all duration-300",
         className
       )}
       {...props}
@@ -23,7 +22,7 @@ export function GlassPanel({ children, className, variant = "panel", ...props }:
 
 export function GlassCard({ children, className, ...props }: GlassPanelProps) {
   return (
-    <GlassPanel variant="card" className={cn("rounded-2xl p-5 hover:bg-[var(--color-bg-hover)]", className)} {...props}>
+    <GlassPanel variant="card" className={cn("rounded-2xl p-5", className)} {...props}>
       {children}
     </GlassPanel>
   )

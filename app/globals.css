@@ -1,88 +1,103 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  
-  /* Brand Colors */
-  --color-brand-cyan: #06b6d4;
   --color-brand-blue: #3b82f6;
+  --color-brand-cyan: #06b6d4;
   --color-brand-amber: #f59e0b;
-  --color-brand-amber-dim: rgba(245, 158, 11, 0.2);
 }
 
-/* Light Theme (Default if manual toggle is off, but we start with dark) */
 :root {
-  --color-bg-base: #f4f4f5;
-  --color-bg-panel: rgba(250, 250, 250, 0.8);
-  --color-bg-card: rgba(255, 255, 255, 0.9);
-  --color-bg-hover: rgba(0, 0, 0, 0.04);
-  --color-border-subtle: #d4d4d8;
-  --color-border-strong: #a1a1aa;
-  --color-text-main: #000000;
-  --color-text-muted: #52525b;
-  --color-text-faint: #71717a;
-  
-  background-color: var(--color-bg-base);
-  color: var(--color-text-main);
+  --color-bg-base: #eff3f8; /* Seta chiara */
+  --color-bg-panel: rgba(255, 255, 255, 0.65);
+  --color-text-main: #0f172a;
+  --color-text-muted: #64748b;
+  --hardware-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0,0,0,0.02);
+  --glass-border: rgba(255, 255, 255, 0.8);
 }
 
-/* Dark Theme overrides when .dark class is on html */
 .dark {
-  --color-bg-base: #050505;
-  --color-bg-panel: rgba(20, 20, 22, 0.7);
-  --color-bg-card: rgba(28, 28, 31, 0.8);
-  --color-bg-hover: rgba(255, 255, 255, 0.05);
-  --color-border-subtle: #27272a;
-  --color-border-strong: #3f3f46;
-  --color-text-main: #ffffff;
-  --color-text-muted: #a1a1aa;
-  --color-text-faint: #71717a;
-  
-  background-color: var(--color-bg-base);
-  color: var(--color-text-main);
+  --color-bg-base: #08080a; /* Antracite puro */
+  --color-bg-panel: rgba(18, 18, 24, 0.6);
+  --color-text-main: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --hardware-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.04);
+  --glass-border: rgba(255, 255, 255, 0.03);
 }
 
+html,
 body {
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: var(--color-bg-base);
   overflow-x: hidden;
 }
 
-/* Utilities */
+body {
+  background: var(--color-bg-base);
+  color: var(--color-text-main);
+  font-family: "Inter", sans-serif;
+}
+
 @layer utilities {
+  /* Card del feed: blur ridotto per non appesantire la GPU con 100+ elementi */
+  .glass-monolith {
+    background: var(--color-bg-panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    box-shadow: var(--hardware-shadow);
+    border: 1px solid var(--glass-border);
+    /* Promuovi su compositing layer separato per evitare repaint */
+    will-change: transform;
+  }
+
+  .bento-inner {
+    @apply rounded-[2.5rem] bg-black/5 dark:bg-white/5 transition-colors duration-300 hover:bg-black/10 dark:hover:bg-white/10;
+  }
+
+  /* Shimmer per skeleton screens */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  /* Pannello sidebar e modali: blur completo OK (1 solo elemento fisso) */
   .glass-panel {
-    background-color: var(--color-bg-panel);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-panel);
+    backdrop-filter: blur(40px) saturate(160%);
+    -webkit-backdrop-filter: blur(40px) saturate(160%);
+    box-shadow: var(--hardware-shadow);
+    border: 1px solid var(--glass-border);
   }
-  
-  .glass-card {
-    background-color: var(--color-bg-card);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--color-border-subtle);
-    box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.05);
-  }
-  
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  
-  .text-gradient {
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-image: linear-gradient(to right, var(--color-brand-blue), var(--color-brand-cyan));
-  }
-  
-  .animate-spring {
-    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes slideUpBreath {
+  0% { transform: translateY(20px); opacity: 0; filter: blur(5px); }
+  100% { transform: translateY(0); opacity: 1; filter: blur(0); }
+}
+
+.animate-breath {
+  animation: slideUpBreath 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes vital-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.5); }
+  50% { transform: scale(1.03); box-shadow: 0 15px 45px rgba(59, 130, 246, 0.7); }
+}
+
+.animate-vital {
+  animation: vital-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Fix per globe.gl */
+#globe-container .scene-container {
+  width: 100% !important;
+  height: 100% !important;
 }

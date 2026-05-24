@@ -24,22 +24,25 @@ export function detectLang(): Lang {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 export function useLang() {
-  const [lang, setLangState] = useState<Lang>('it')
+  const [lang, setLangState] = useState<Lang>(() => {
+    if (typeof window === 'undefined') return 'it'
 
-  useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Lang | null
     if (stored && ['it', 'en', 'fr', 'es', 'de'].includes(stored)) {
-      setLangState(stored)
-    } else {
-      const detected = detectLang()
-      setLangState(detected)
-      localStorage.setItem(STORAGE_KEY, detected)
+      return stored
     }
-  }, [])
+
+    const detected = detectLang()
+    localStorage.setItem(STORAGE_KEY, detected)
+    return detected
+  })
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, lang)
+  }, [lang])
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l)
-    localStorage.setItem(STORAGE_KEY, l)
   }, [])
 
   const t = useCallback((key: string): string => {
@@ -91,70 +94,191 @@ export function vitaLabelI18n(giorni: number, lang: Lang): string {
 export function translateRegion(region: string | undefined | null, lang: Lang): string {
   if (!region) return ''
   const r = region.trim()
-  const map: Record<Lang, Record<string, string>> = {
-    it: {},
-    en: {
-      'Città del Vaticano': 'Vatican City',
-      'Mare Mediterraneo': 'Mediterranean Sea',
-      'Europa': 'Europe',
-      'Oceano Atlantico': 'Atlantic Ocean',
-      'Mar Tirreno': 'Tyrrhenian Sea',
-      'Italia': 'Italy',
-      'Francia': 'France',
-      'Spagna': 'Spain',
-      'Germania': 'Germany',
-      'Svizzera': 'Switzerland',
-      'Austria': 'Austria',
-      'Slovenia': 'Slovenia',
-      'Sconosciuto': 'Unknown',
-    },
-    fr: {
-      'Città del Vaticano': 'Cité du Vatican',
-      'Mare Mediterraneo': 'Mer Méditerranée',
-      'Europa': 'Europe',
-      'Oceano Atlantico': 'Océan Atlantique',
-      'Mar Tirreno': 'Mer Tyrrhénienne',
-      'Italia': 'Italie',
-      'Francia': 'France',
-      'Spagna': 'Espagne',
-      'Germania': 'Allemagne',
-      'Svizzera': 'Suisse',
-      'Austria': 'Autriche',
-      'Slovenia': 'Slovénie',
-      'Sconosciuto': 'Inconnu',
-    },
-    es: {
-      'Città del Vaticano': 'Ciudad del Vaticano',
-      'Mare Mediterraneo': 'Mar Mediterráneo',
-      'Europa': 'Europa',
-      'Oceano Atlantico': 'Océano Atlántico',
-      'Mar Tirreno': 'Mar Tirreno',
-      'Italia': 'Italia',
-      'Francia': 'Francia',
-      'Spagna': 'España',
-      'Germania': 'Alemania',
-      'Svizzera': 'Suiza',
-      'Austria': 'Austria',
-      'Slovenia': 'Eslovenia',
-      'Sconosciuto': 'Desconocido',
-    },
-    de: {
-      'Città del Vaticano': 'Vatikanstadt',
-      'Mare Mediterraneo': 'Mittelmeer',
-      'Europa': 'Europa',
-      'Oceano Atlantico': 'Atlantischer Ozean',
-      'Mar Tirreno': 'Tyrrhenisches Meer',
-      'Italia': 'Italien',
-      'Francia': 'Frankreich',
-      'Spagna': 'Spanien',
-      'Germania': 'Deutschland',
-      'Svizzera': 'Schweiz',
-      'Austria': 'Österreich',
-      'Slovenia': 'Slowenien',
-      'Sconosciuto': 'Unbekannt',
+  
+  // Handle formats like "City 🇮🇹" or "Europe 🇪🇺"
+  // We extract the text part (before the last space if there is an emoji)
+  const parts = r.split(' ')
+  if (parts.length > 1) {
+    const textPart = parts.slice(0, -1).join(' ')
+    const emojiPart = parts[parts.length - 1]
+    
+    // Check if the last part looks like an emoji (non-alphanumeric character)
+    if (/[^\p{L}\p{N}]/u.test(emojiPart)) {
+      const translated = TRANSLATED_TERMS[lang]?.[textPart] || textPart
+      return `${translated} ${emojiPart}`
     }
   }
-  return map[lang]?.[r] || r
+
+  return TRANSLATED_TERMS[lang]?.[r] || r
+}
+
+// ─── Shared Translation Map for Locations ─────────────────────────────────────
+const TRANSLATED_TERMS: Record<Lang, Record<string, string>> = {
+  it: {},
+  en: {
+    'Città del Vaticano': 'Vatican City',
+    'Mare Mediterraneo': 'Mediterranean Sea',
+    'Europa': 'Europe',
+    'Oceano Atlantico': 'Atlantic Ocean',
+    'Mar Tirreno': 'Tyrrhenian Sea',
+    'Italia': 'Italy',
+    'Francia': 'France',
+    'Spagna': 'Spain',
+    'Germania': 'Germany',
+    'Svizzera': 'Switzerland',
+    'Austria': 'Austria',
+    'Slovenia': 'Slovenia',
+    'Sconosciuto': 'Unknown',
+    'Regno Unito': 'United Kingdom',
+    'Stati Uniti': 'United States',
+    'Giappone': 'Japan',
+    'Cina': 'China',
+    'Brasile': 'Brazil',
+    'Russia': 'Russia',
+    'Portogallo': 'Portugal',
+    'Grecia': 'Greece',
+    'Belgio': 'Belgium',
+    'Olanda': 'Netherlands',
+    'Svezia': 'Sweden',
+    'Norvegia': 'Norway',
+    'Danimarca': 'Denmark',
+    'Finlandia': 'Finland',
+    'Polonia': 'Poland',
+    'Turchia': 'Turkey',
+    'Egitto': 'Egypt',
+    'Canada': 'Canada',
+    'Messico': 'Mexico',
+    'Australia': 'Australia',
+    'Roma': 'Rome',
+    'Milano': 'Milan',
+    'Napoli': 'Naples',
+    'Torino': 'Turin',
+    'Venezia': 'Venice',
+    'Firenze': 'Florence',
+  },
+  fr: {
+    'Città del Vaticano': 'Cité du Vatican',
+    'Mare Mediterraneo': 'Mer Méditerranée',
+    'Europa': 'Europe',
+    'Oceano Atlantico': 'Océan Atlantique',
+    'Mar Tirreno': 'Mer Tyrrhénienne',
+    'Italia': 'Italie',
+    'Francia': 'France',
+    'Spagna': 'Espagne',
+    'Germania': 'Allemagne',
+    'Svizzera': 'Suisse',
+    'Austria': 'Autriche',
+    'Slovenia': 'Slovénie',
+    'Sconosciuto': 'Inconnu',
+    'Regno Unito': 'Royaume-Uni',
+    'Stati Uniti': 'États-Unis',
+    'Giappone': 'Japon',
+    'Cina': 'Chine',
+    'Brasile': 'Brésil',
+    'Russia': 'Russie',
+    'Portogallo': 'Portugal',
+    'Grecia': 'Grèce',
+    'Belgio': 'Belgique',
+    'Olanda': 'Pays-Bas',
+    'Svezia': 'Suède',
+    'Norvegia': 'Norvège',
+    'Danimarca': 'Danemark',
+    'Finlandia': 'Finlande',
+    'Polonia': 'Pologne',
+    'Turchia': 'Turquie',
+    'Egitto': 'Égypte',
+    'Canada': 'Canada',
+    'Messico': 'Mexique',
+    'Australia': 'Australie',
+    'Roma': 'Rome',
+    'Milano': 'Milan',
+    'Napoli': 'Naples',
+    'Torino': 'Turin',
+    'Venezia': 'Venise',
+    'Firenze': 'Florence',
+  },
+  es: {
+    'Città del Vaticano': 'Ciudad del Vaticano',
+    'Mare Mediterraneo': 'Mar Mediterráneo',
+    'Europa': 'Europa',
+    'Oceano Atlantico': 'Océano Atlántico',
+    'Mar Tirreno': 'Mar Tirreno',
+    'Italia': 'Italia',
+    'Francia': 'Francia',
+    'Spagna': 'España',
+    'Germania': 'Alemania',
+    'Svizzera': 'Suiza',
+    'Austria': 'Austria',
+    'Slovenia': 'Eslovenia',
+    'Sconosciuto': 'Desconocido',
+    'Regno Unito': 'Reino Unido',
+    'Stati Uniti': 'Estados Unidos',
+    'Giappone': 'Japón',
+    'Cina': 'China',
+    'Brasile': 'Brasil',
+    'Russia': 'Rusia',
+    'Portogallo': 'Portugal',
+    'Grecia': 'Grecia',
+    'Belgio': 'Bélgica',
+    'Olanda': 'Países Bajos',
+    'Svezia': 'Suecia',
+    'Norvegia': 'Noruega',
+    'Danimarca': 'Dinamarca',
+    'Finlandia': 'Finlandia',
+    'Polonia': 'Polonia',
+    'Turchia': 'Turquía',
+    'Egitto': 'Egipto',
+    'Canada': 'Canadá',
+    'Messico': 'México',
+    'Australia': 'Australia',
+    'Roma': 'Roma',
+    'Milano': 'Milán',
+    'Napoli': 'Nápoles',
+    'Torino': 'Turín',
+    'Venezia': 'Venecia',
+    'Firenze': 'Florencia',
+  },
+  de: {
+    'Città del Vaticano': 'Vatikanstadt',
+    'Mare Mediterraneo': 'Mittelmeer',
+    'Europa': 'Europa',
+    'Oceano Atlantico': 'Atlantischer Ozean',
+    'Mar Tirreno': 'Tyrrhenisches Meer',
+    'Italia': 'Italien',
+    'Francia': 'Frankreich',
+    'Spagna': 'Spanien',
+    'Germania': 'Deutschland',
+    'Svizzera': 'Schweiz',
+    'Austria': 'Österreich',
+    'Slovenia': 'Slowenien',
+    'Sconosciuto': 'Unbekannt',
+    'Regno Unito': 'Vereinigtes Königreich',
+    'Stati Uniti': 'Vereinigte Staaten',
+    'Giappone': 'Japan',
+    'Cina': 'China',
+    'Brasile': 'Brasilien',
+    'Russia': 'Russland',
+    'Portogallo': 'Portugal',
+    'Grecia': 'Griechenland',
+    'Belgio': 'Belgien',
+    'Olanda': 'Niederlande',
+    'Svezia': 'Schweden',
+    'Norvegia': 'Norwegen',
+    'Danimarca': 'Dänemark',
+    'Finlandia': 'Finnland',
+    'Polonia': 'Polen',
+    'Turchia': 'Türkei',
+    'Egitto': 'Ägypten',
+    'Canada': 'Kanada',
+    'Messico': 'Mexiko',
+    'Australia': 'Australien',
+    'Roma': 'Rom',
+    'Milano': 'Mailand',
+    'Napoli': 'Neapel',
+    'Torino': 'Turin',
+    'Venezia': 'Venedig',
+    'Firenze': 'Florenz',
+  }
 }
 
 // ─── Translations Dictionary ──────────────────────────────────────────────────
@@ -190,11 +314,12 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
 
     // ── Nav / Tabs ──
     attivita: 'Attività',
+    activity: 'Attività',
     profilo: 'Profilo',
+    account: 'Account',
     lancia_pensiero: 'Lancia un pensiero',
 
     // ── Account ──
-    account: 'Account',
     visitatore_anonimo: 'Visitatore Anonimo',
     sblocca_potenziale: 'Sblocca il Potenziale',
     crea_account_desc: 'Crea un account per salvare pensieri, tenere traccia delle risposte e molto altro.',
@@ -206,6 +331,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     chiaro: 'Chiaro',
     scuro: 'Scuro',
     notifiche_push: 'Notifiche Push',
+    rotazione_orbitale: 'Rotazione Globo',
     presto: 'Presto',
     connesso_google: 'Connesso con Google',
     connesso_email: 'Connesso via Email',
@@ -301,6 +427,27 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     guida_posizione_titolo: 'Attiva la Posizione',
     guida_posizione_desc: "Per garantire l'autenticità dei messaggi su Think, è necessario attivare il GPS. Segui i passaggi per il tuo browser:",
     capito: 'Capito',
+
+    // -- Notifiche --
+    notifiche: 'Notifiche',
+    nessuna_notifica: 'Nessuna nuova notifica',
+    nuovo_sviluppo: 'Nuovo sviluppo vicino a te',
+    nuova_risposta: 'Nuova risposta',
+    interazione: 'Interazione',
+    segna_come_letto: 'Segna come letto',
+    cancella_tutto: 'Cancella tutto',
+    notifica_testo: 'Qualcuno ha risposto a un pensiero nel tuo raggio d\'azione.',
+
+    // -- Onboarding Notifiche --
+    attiva_notifiche: 'Attiva le Notifiche',
+    notifiche_desc: 'Resta connesso con il mondo. Ricevi avvisi istantanei quando qualcuno risponde ai tuoi pensieri o quando nuove idee nascono vicino a te.',
+    privacy_protetta: 'Privacy Protetta',
+    privacy_desc: 'Puoi disattivarle in ogni momento dalle impostazioni.',
+    realtime_veloce: 'Tempo Reale',
+    realtime_desc: 'Niente ritardi, ricevi le risposte mentre accadono.',
+    conferma_attivazione: 'Sì, attiva notifiche',
+    piu_tardi: 'Più tardi',
+    elaborazione: 'Attivazione...',
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -331,10 +478,11 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     rispondi: 'Reply...',
 
     attivita: 'Activity',
+    activity: 'Activity',
     profilo: 'Profile',
+    account: 'Account',
     lancia_pensiero: 'Launch a thought',
 
-    account: 'Account',
     visitatore_anonimo: 'Anonymous Visitor',
     sblocca_potenziale: 'Unlock Your Potential',
     crea_account_desc: 'Create an account to save thoughts, track replies, and much more.',
@@ -346,6 +494,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     chiaro: 'Light',
     scuro: 'Dark',
     notifiche_push: 'Push Notifications',
+    rotazione_orbitale: 'Globe Rotation',
     presto: 'Soon',
     connesso_google: 'Connected with Google',
     connesso_email: 'Connected via Email',
@@ -355,8 +504,8 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     pseudonimo: 'Your Global Pseudonym',
     nick_regole: 'Letters, numbers and underscores only. 3–20 characters.',
     logout: 'Logout',
-    nick_salvato: 'Nickname saved successfully!',
     errore_salvataggio: 'Error saving',
+    nick_salvato: 'Nickname saved successfully!',
 
     segnala_bug: 'Report a bug or give a suggestion 💡',
     lascia_messaggio: 'Leave us a message',
@@ -435,6 +584,27 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     guida_posizione_titolo: 'Enable Location',
     guida_posizione_desc: 'To ensure authenticity on Think, GPS must be enabled. Follow the steps for your browser:',
     capito: 'Got it',
+
+    // -- Notifications --
+    notifiche: 'Notifications',
+    nessuna_notifica: 'No new notifications',
+    nuovo_sviluppo: 'New development nearby',
+    nuova_risposta: 'New reply',
+    interazione: 'Interaction',
+    segna_come_letto: 'Mark as read',
+    cancella_tutto: 'Clear all',
+    notifica_testo: 'Someone replied to a thought in your range.',
+
+    // -- Onboarding Notifications --
+    attiva_notifiche: 'Enable Notifications',
+    notifiche_desc: 'Stay connected with the world. Get instant alerts when someone replies to your thoughts or when new ideas are born near you.',
+    privacy_protetta: 'Privacy Protected',
+    privacy_desc: 'You can disable them at any time in settings.',
+    realtime_veloce: 'Real Time',
+    realtime_desc: 'No delays, get replies as they happen.',
+    conferma_attivazione: 'Yes, enable notifications',
+    piu_tardi: 'Later',
+    elaborazione: 'Enabling...',
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -465,10 +635,11 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     rispondi: 'Répondre...',
 
     attivita: 'Activité',
+    activity: 'Activité', // Added
     profilo: 'Profil',
+    account: 'Compte',
     lancia_pensiero: 'Lancer une pensée',
 
-    account: 'Compte',
     visitatore_anonimo: 'Visiteur Anonyme',
     sblocca_potenziale: 'Libérez le Potentiel',
     crea_account_desc: 'Créez un compte pour sauvegarder vos pensées, suivre les réponses et bien plus.',
@@ -480,6 +651,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     chiaro: 'Clair',
     scuro: 'Sombre',
     notifiche_push: 'Notifications Push',
+    rotazione_orbitale: 'Rotation du globe',
     presto: 'Bientôt',
     connesso_google: 'Connecté avec Google',
     connesso_email: 'Connecté par Email',
@@ -599,10 +771,11 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     rispondi: 'Responder...',
 
     attivita: 'Actividad',
+    activity: 'Actividad',
     profilo: 'Perfil',
+    account: 'Cuenta',
     lancia_pensiero: 'Lanzar un pensamiento',
 
-    account: 'Cuenta',
     visitatore_anonimo: 'Visitante Anónimo',
     sblocca_potenziale: 'Desbloquea tu Potencial',
     crea_account_desc: 'Crea una cuenta para guardar pensamientos, seguir respuestas y mucho más.',
@@ -614,6 +787,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     chiaro: 'Claro',
     scuro: 'Oscuro',
     notifiche_push: 'Notificaciones Push',
+    rotazione_orbitale: 'Rotacion del globo',
     presto: 'Próximamente',
     connesso_google: 'Conectado con Google',
     connesso_email: 'Conectado por Email',
@@ -748,6 +922,7 @@ const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     chiaro: 'Hell',
     scuro: 'Dunkel',
     notifiche_push: 'Push-Benachrichtigungen',
+    rotazione_orbitale: 'Globusrotation',
     presto: 'Bald',
     connesso_google: 'Mit Google verbunden',
     connesso_email: 'Per E-Mail verbunden',
