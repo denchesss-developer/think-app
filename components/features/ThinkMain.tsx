@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
-import { containsBannedWord } from "@/lib/bannedWords"
 import { useLang, timeAgoI18n, repliesLabel, translateRegion } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import Logo from "@/components/ui/Logo"
@@ -107,6 +106,9 @@ const CATEGORIE = [
   { slug: 'mondo',            label: 'Mondo',    emoji: '🌐' },
 ];
 
+import { useAuthProfile, nicknameErrorMessage } from "@/lib/hooks/useAuthProfile"
+import { useLocationManager } from "@/lib/hooks/useLocationManager"
+
 const PAESI = [
   { code: 'IT', flag: '🇮🇹' },
   { code: 'US', flag: '🇺🇸' },
@@ -114,16 +116,6 @@ const PAESI = [
   { code: 'ES', flag: '🇪🇸' },
   { code: 'DE', flag: '🇩🇪' },
 ];
-
-function nicknameErrorMessage(nick: string) {
-  const n = (nick || "").trim()
-  if (n.toLowerCase() === 'anonimo') return "Scegli un nickname diverso da Anonimo"
-  if (n.length < 3) return "Minimo 3 caratteri"
-  if (n.length > 20) return "Massimo 20 caratteri"
-  if (!/^[a-zA-Z0-9_]+$/.test(n)) return "Solo lettere, numeri e _"
-  if (containsBannedWord(n)) return "Nickname non consentito"
-  return ""
-}
 
 type Mode = "feed" | "chat" | "account" | "activity" | "compose" | "notifications"
 
@@ -212,20 +204,6 @@ const CollapsibleMonthBucket = ({ bucket, children, isFirst }: { bucket: { label
 };
 
 export default function ThinkMain() {
-  const getNicknamePromptSeenKey = (userId: string) => `think_nickname_prompt_seen:${userId}`
-  const hasSeenNicknamePrompt = (userId: string) => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem(getNicknamePromptSeenKey(userId)) === 'true'
-  }
-  const markNicknamePromptSeen = (userId: string) => {
-    if (typeof window === 'undefined') return
-    localStorage.setItem(getNicknamePromptSeenKey(userId), 'true')
-  }
-  const clearNicknamePromptSeen = (userId: string) => {
-    if (typeof window === 'undefined') return
-    localStorage.removeItem(getNicknamePromptSeenKey(userId))
-  }
-
   const { lang, setLang, t } = useLang()
   const [appTheme, setAppTheme] = useState<AppTheme>("system")
   const [isDark, setIsDark] = useState(false)
@@ -323,12 +301,7 @@ export default function ThinkMain() {
   const [nuovaRisposta, setNuovaRisposta] = useState('')
   const [replyingTo, setReplyingTo] = useState<Risposta | null>(null)
 
-  const [mioNickname, setMioNickname] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('think_nickname') || ''
-    }
-    return ''
-  })
+
   const [filtroAttivo, setFiltroAttivo] = useState('Recenti')
   const [testoRicerca, setTestoRicerca] = useState('')
   const [mostraPannelloFiltri, setMostraPannelloFiltri] = useState(false)
@@ -343,22 +316,65 @@ export default function ThinkMain() {
     return 'IT'
   })
 
+  const {
+    utenteLoggato,
+    setUtenteLoggato,
+    sessionId,
+    mioNickname,
+    setMioNickname,
+    mostraPopupLogin,
+    setMostraPopupLogin,
+    mostraPopupBenvenuto,
+    setMostraPopupBenvenuto,
+    mostraPopupNicknameObbligatorio,
+    setMostraPopupNicknameObbligatorio,
+    emailLogin,
+    setEmailLogin,
+    loginSent,
+    setLoginSent,
+    loginLoading,
+    setLoginLoading,
+    loginError,
+    setLoginError,
+    showPushPrompt,
+    setShowPushPrompt,
+    pushEnabled,
+    setPushEnabled,
+    syncProfile,
+    handleCompleteProfile,
+    handleSaveNickname,
+    salvaNicknameSoloLocale,
+    logout,
+    accediConGoogle,
+    inviaMagicLink,
+    handleDismissWelcome,
+  } = useAuthProfile(setMode, setActiveTab);
+
+  const {
+    userLocation,
+    setUserLocation,
+    isLocationActive,
+    locationLoading,
+    locationError,
+    showLocationGuide,
+    setShowLocationGuide,
+    manualSearchQuery,
+    setManualSearchQuery,
+    manualResults,
+    setManualResults,
+    searchLoading,
+    mostraRicercaManualeChat,
+    setMostraRicercaManualeChat,
+    ottieniCoordinate,
+    updateLocation,
+    cercaCitta,
+    selezionaCittaManuale,
+    getEffectiveCoords,
+  } = useLocationManager();
+
   // Modals state
   const [nuovoMessaggio, setNuovoMessaggio] = useState('')
 
-  const [utenteLoggato, setUtenteLoggato] = useState<Utente | null>(null)
-  // Session ID per anonimi
-  const [sessionId, setSessionId] = useState<string | null>(null)
-
-  // Modali e Stati Variabili
-  const [mostraPopupLogin, setMostraPopupLogin] = useState(false)
-  const [mostraPopupBenvenuto, setMostraPopupBenvenuto] = useState(false)
-  const [mostraPopupNicknameObbligatorio, setMostraPopupNicknameObbligatorio] = useState(false)
-
-  const [emailLogin, setEmailLogin] = useState('')
-  const [loginSent, setLoginSent] = useState(false)
-  const [loginLoading, setLoginLoading] = useState(false)
-  const [loginError, setLoginError] = useState('')
 
   // Account Data
   const [myThinks, setMyThinks] = useState<Chat[]>([])
@@ -373,14 +389,12 @@ export default function ThinkMain() {
   const [reportTestoContenuto, setReportTestoContenuto] = useState<string | undefined>(undefined)
   const [autoRotate, setAutoRotate] = useState(true)
 
-  // Push notifications onboarding state
-  const [showPushPrompt, setShowPushPrompt] = useState(false)
-  const [pushEnabled, setPushEnabled] = useState(false)
+
 
   // News Toast state (Task 3: notifica in-app per nuovi Pin Domanda)
   const [newsToast, setNewsToast] = useState<{ chat: Chat; visible: boolean } | null>(null)
   const questionReadTimeoutRef = useRef<number | null>(null)
-  const lastSyncedProfileUserIdRef = useRef<string | null>(null)
+
 
   // Notifications logic
   const { notifications, markAsRead, markAllAsRead } = useNotifications(utenteLoggato?.id)
@@ -454,186 +468,21 @@ export default function ThinkMain() {
     }
   }, [searchQueryLng])
 
-  // User location state for UI feedback
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; regione: string } | null>(null)
-  const isLocationActive = !!userLocation?.regione && userLocation.regione !== t('il_tuo_angolo')
-  const [locationLoading, setLocationLoading] = useState(false)
-  const [locationError, setLocationError] = useState<string | null>(null)
-  const [showLocationGuide, setShowLocationGuide] = useState(false)
 
-  async function updateLocation(showErrors = false) {
-    setLocationLoading(true)
-    setLocationError(null)
 
-    if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost') {
-        if (showErrors) alert("Attenzione: La geolocalizzazione richiede una connessione sicura (HTTPS). La tua connessione attuale non permette l'accesso al GPS.")
-        setLocationLoading(false)
-        return
-    }
-
-    // Check if permission is denied beforehand (for better UX)
-    if (typeof navigator !== 'undefined' && navigator.permissions) {
-      try {
-        const status = await navigator.permissions.query({ name: 'geolocation' as PermissionName })
-        if (status.state === 'denied') {
-          if (showErrors) alert("Hai bloccato l'accesso alla posizione per questo sito.\n\nPer abilitarla, clicca sull'icona della posizione o del lucchetto nella barra degli indirizzi in alto (o nelle impostazioni del browser su smartphone) e consenti l'accesso alla posizione, poi riprova.")
-          setLocationError("Permesso negato. Riabilita la posizione nelle impostazioni del browser.")
-          setLocationLoading(false)
-          return
-        }
-      } catch (e) {
-        // Permissions API might not support 'geolocation' in all browsers
-      }
-    }
-
-    try {
-      const loc = await ottieniCoordinate()
-      if (loc) {
-        setUserLocation(loc)
-      } else {
-        if (showErrors) alert("Impossibile recuperare la posizione. Verifica che il tuo segnale GPS sia attivo o utilizza la ricerca manuale.")
-        setLocationError("Impossibile recuperare la posizione.")
-        setUserLocation(null)
-      }
-    } catch {
-      if (showErrors) alert("Si è verificato un errore durante il recupero della posizione.")
-      setLocationError("Impossibile recuperare la posizione.")
-      setUserLocation(null)
-    } finally {
-      setLocationLoading(false)
-    }
-  }
-
-  // Manual Location Selection Logic
-  const [manualSearchQuery, setManualSearchQuery] = useState('')
-  const [manualResults, setManualResults] = useState<any[]>([])
-  const [searchLoading, setSearchLoading] = useState(false)
-  const [mostraRicercaManualeChat, setMostraRicercaManualeChat] = useState(false)
-
-  // Utility to convert ISO country code to Emoji Flag
-  function getFlagEmoji(countryCode: string) {
-    if (!countryCode) return '';
-    const codePoints = countryCode
-      .toUpperCase()
-      .split('')
-      .map(char => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
-  }
-
-  async function cercaCitta(query: string) {
-    if (!query || query.length < 3) return
-    setSearchLoading(true)
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
-        { headers: { 'Accept-Language': 'it' } }
-      )
-      const data = await res.json()
-      setManualResults(data)
-    } catch {
-      // Ricerca manuale fallita silenziosamente
-    } finally {
-      setSearchLoading(false)
-    }
-  }
-
-  function selezionaCittaManuale(item: any) {
-    const addr = item.address || {}
-    const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.suburb || addr.county || addr.state || 'Think'
-    const countryCode = addr.country_code ? addr.country_code.toUpperCase() : 'IT'
-    const flag = getFlagEmoji(countryCode)
-    const regione = `${cityName} ${flag}`
-
-    setUserLocation({
-      lat: parseFloat(item.lat),
-      lng: parseFloat(item.lon),
-      regione
-    })
-    setManualResults([])
-    setManualSearchQuery('')
-  }
-
-  async function ottieniCoordinate(): Promise<{ lat: number; lng: number; regione: string } | null> {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve(null)
-        return
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude
-          const lng = position.coords.longitude
-
-          // Reverse geocode with Nominatim using current app language
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10`,
-              { headers: { 'Accept-Language': lang } }
-            )
-            const data = await res.json()
-            const addr = data.address || {}
-
-            // FORMAT: "City 🇮🇹"
-            const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.suburb || addr.county || addr.state || 'Think'
-            const countryCode = addr.country_code ? addr.country_code.toUpperCase() : 'IT'
-            const flag = getFlagEmoji(countryCode)
-            const regione = `${cityName} ${flag}`
-
-            resolve({ lat, lng, regione })
-          } catch {
-            resolve(null)
-          }
-        },
-        () => {
-          resolve(null)
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      )
-    })
-  }
-
-  // Effect Initialization
+  // Effect Initialization (non-auth: deep-links, realtime, theme, countries)
   useEffect(() => {
     updateLocation(false)
-
-    // Globe Data
     fetch('https://raw.githubusercontent.com/vasturiano/react-globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
       .then(res => res.json()).then(setCountries)
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchChats().catch(e => console.error("DEBUG: fetchChats failed early:", e))
 
-    // Session ID Logic (Device Identity) - Safe Fallback for crypto.randomUUID
-    let currentSessionId = localStorage.getItem('think_session_id')
-    if (!currentSessionId) {
-      try {
-        currentSessionId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)
-      } catch (e) {
-        currentSessionId = Math.random().toString(36).substring(2, 15)
-      }
-      localStorage.setItem('think_session_id', currentSessionId)
-    }
-    setSessionId(currentSessionId)
-
-    // NICKNAME LOGIC - gestita dentro getSession() sotto per evitare chiamate duplicate
-
-    // ALERT DIAGNOSTICO IMMEDIATO E PULIZIA URL
+    // Task 5 / Task 3: Intercetta ?news_id= o ?thought= nell'URL
     if (typeof window !== 'undefined') {
-      (window as any).THINK_VERSION = "v5"
-
-      // Task 5 / Task 3: Intercetta ?news_id= o ?thought= nell'URL
-      // Viene usato dal Blog per rimandare al globo sul pin specifico
       const urlParams = new URLSearchParams(window.location.search)
       const newsIdParam = urlParams.get('news_id') || urlParams.get('thought')
       if (newsIdParam) {
-        // Rimuovi i params dall'URL
         window.history.replaceState(null, '', window.location.pathname)
-        // Aspetta che i chats siano caricati, poi apri il pin
         const tryOpenPin = (retries = 0) => {
           setTimeout(() => {
             const targetChat = (window as any).__THINK_CHATS__?.find((c: Chat) => String(c.id) === newsIdParam)
@@ -652,131 +501,12 @@ export default function ThinkMain() {
         }
         tryOpenPin()
       }
-
-      // Handle OAuth token - deve essere processato PRIMA di getSession
-      const processOAuth = async () => {
-        // PRIMA DI TUTTO: se c'è un hash con token, pulisci tutto e basta
-        if (window.location.hash.includes('access_token')) {
-          const hash = window.location.hash
-          const tokenMatch = hash.match(/access_token=([^&#]+)/)
-          const refreshMatch = hash.match(/refresh_token=([^&#]+)/)
-
-          const accessToken = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null
-          const refreshToken = refreshMatch ? decodeURIComponent(refreshMatch[1]) : null
-
-          if (accessToken) {
-            try {
-              const { data, error } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken || ''
-              })
-
-              if (!error && data.session) {
-                setUtenteLoggato(data.session.user as unknown as Utente)
-              }
-            } catch {
-              // Sessione OAuth non impostabile
-            }
-          }
-
-          // Pulisci URL DOPO
-          window.history.replaceState(null, '', window.location.pathname)
-        }
-      }
-
-      // Esegui subito
-      processOAuth()
     }
-
-    // Check for Auth Errors in URL (e.g. bad_oauth_state)
-    const params = new URLSearchParams(window.location.search)
-
-    // DEBUG: Log all URL params for error diagnosis
-    const errorParam = params.get('error')
-    const errorCodeParam = params.get('error_code')
-    const errorDescParam = params.get('error_description')
-
-    if (errorParam === 'bad_oauth_state' || errorDescParam?.includes('OAuth state')) {
-      setLoginError("Errore sessione (OAuth). Se usi l'app di Telegram, prova ad aprire il sito nel browser esterno (Safari/Chrome).")
-      setMostraPopupLogin(true)
-    } else if (errorParam === 'server_error' || errorDescParam?.includes('Database')) {
-      setLoginError("Errore durante la registrazione. Il problema potrebbe essere: 1) Limite utenti raggiunto, 2) Problema temporaneo del database. Riprova tra qualche minuto.")
-      setMostraPopupLogin(true)
-    }
-
-    // Auth
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const user = session?.user as unknown as Utente | null
-      // More robust check for logged-in user: must have user object with valid non-empty ID
-      const isLoggedIn = !!user && !!user.id && typeof user.id === 'string' && user.id.trim().length > 0
-      console.warn("DEBUG/ALERT: getSession user:", isLoggedIn ? user?.id : "not logged in or invalid user", { user, session })
-
-      if (isLoggedIn) {
-        setUtenteLoggato(user)
-        setMostraPopupLogin(false)
-        // Trigger syncProfile immediately after setting user
-        syncProfileImmediate(user.id)
-
-        // Check if we should show push prompt
-        const pushDecision = localStorage.getItem('think_push_decision')
-        if (!pushDecision) {
-          setTimeout(() => setShowPushPrompt(true), 1500)
-        } else if (pushDecision === 'granted') {
-          setPushEnabled(true)
-        }
-      } else {
-        setUtenteLoggato(null)
-        // Utente NON loggato: verifica localStorage per nickname
-        const nickLocale = localStorage.getItem('think_nickname')
-        if (!nickLocale) {
-          setMioNickname('')
-          setMostraPopupBenvenuto(true)
-        } else {
-          setMioNickname(nickLocale)
-          setMostraPopupBenvenuto(false)
-        }
-      }
-    }).catch(() => { /* Sessione non disponibile */ })
-
-    // Funzione per sincronizzare il profilo - definita qui per essere chiamata subito
-    const syncProfileImmediate = async (userId: string) => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('nickname')
-          .eq('id', userId)
-          .single()
-
-        if (error) return
-
-        if (!data || !data.nickname || data.nickname.trim() === '') {
-          if (!hasSeenNicknamePrompt(userId)) {
-            markNicknamePromptSeen(userId)
-            setMostraPopupNicknameObbligatorio(true)
-            setMostraPopupBenvenuto(false)
-          }
-        } else {
-          setMioNickname(data.nickname)
-          localStorage.setItem('think_nickname', data.nickname)
-          clearNicknamePromptSeen(userId)
-          setMostraPopupNicknameObbligatorio(false)
-        }
-      } catch {
-        // Profilo non caricabile
-      }
-    }
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const user = session?.user as unknown as Utente | null
-      setUtenteLoggato(prev => prev?.id === user?.id ? prev : user)
-      if (user) setMostraPopupLogin(false)
-    })
 
     // Realtime Subscriptions
     const chatsChannel = supabase
       .channel('public:chats_realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats' }, (payload) => {
-        // New chat: add to array without replacing existing items (preserves transitions)
         if (payload.new) {
           setChats((prev) => {
             const exists = prev.some(c => c.id === payload.new.id)
@@ -788,7 +518,6 @@ export default function ThinkMain() {
           if (payload.new.tipo === 'domanda_notizia') {
             const newsPinChat = payload.new as Chat
             setNewsToast({ chat: newsPinChat, visible: true })
-            // Auto-dismiss after 8 seconds
             setTimeout(() => setNewsToast(prev => prev ? { ...prev, visible: false } : null), 8000)
             setTimeout(() => setNewsToast(null), 8800)
           }
@@ -801,16 +530,11 @@ export default function ThinkMain() {
             if (old && (old.lat !== payload.new.lat || old.lng !== payload.new.lng)) {
               const arc = { id: `${payload.new.id}-${Date.now()}`, startLat: old.lat!, startLng: old.lng!, endLat: payload.new.lat, endLng: payload.new.lng }
               setArcsViaggio(a => [...a, arc])
-              // Arc stays visible for 30 seconds
               setTimeout(() => setArcsViaggio(a => a.filter(x => x.id !== arc.id)), 30000)
             }
-            // Mutate the existing object in-place to preserve object identity.
-            // react-globe.gl tracks HTML elements by object reference, so a new
-            // object (spread) would create a new DOM element (instant teleport).
-            // Mutating the SAME object lets the library apply CSS transitions.
             if (old) {
               Object.assign(old, payload.new)
-              return [...prev] // new array, same object references
+              return [...prev]
             }
             return prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } as Chat : c)
           })
@@ -822,8 +546,7 @@ export default function ThinkMain() {
         }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'risposte' }, () => {
-        // Risposte: a new reply may have updated the chat's risposte_count / coordinates
-        // The chats UPDATE event will handle that, so nothing extra needed here
+        // The chats UPDATE event will handle risposte_count / coordinates
       })
       .subscribe()
 
@@ -862,18 +585,9 @@ export default function ThinkMain() {
     }
     prefersDark.addEventListener('change', mediaListener)
 
-    // Listen for open-login-modal custom event (from AccountView/ActivityView mobile buttons)
-    const handleOpenLogin = () => {
-      setMostraPopupBenvenuto(false)
-      setMostraPopupLogin(true)
-    }
-    window.addEventListener('open-login-modal', handleOpenLogin)
-
     return () => {
-      subscription.unsubscribe()
       supabase.removeChannel(chatsChannel)
       prefersDark.removeEventListener('change', mediaListener)
-      window.removeEventListener('open-login-modal', handleOpenLogin)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -967,170 +681,7 @@ export default function ThinkMain() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, utenteLoggato])
 
-  // Sincronizza profilo/nickname se loggato (sempre, non solo in account)
-  useEffect(() => {
-    const currentUserId = utenteLoggato?.id || null
-    if (!currentUserId) {
-      lastSyncedProfileUserIdRef.current = null
-      return
-    }
-    if (lastSyncedProfileUserIdRef.current === currentUserId) return
-    lastSyncedProfileUserIdRef.current = currentUserId
-    syncProfile()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [utenteLoggato?.id])
 
-  async function syncProfile() {
-    if (!utenteLoggato) return
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('nickname')
-        .eq('id', utenteLoggato.id)
-        .single()
-
-      if (error) return
-
-      // Verifica se il nickname è presente e non vuoto
-      if (data && data.nickname && data.nickname.trim() !== '') {
-        setMioNickname(data.nickname)
-        localStorage.setItem('think_nickname', data.nickname)
-        clearNicknamePromptSeen(utenteLoggato.id)
-        setMostraPopupNicknameObbligatorio(false)
-      } else {
-        if (!hasSeenNicknamePrompt(utenteLoggato.id)) {
-          markNicknamePromptSeen(utenteLoggato.id)
-          setMostraPopupNicknameObbligatorio(true)
-          setMostraPopupBenvenuto(false)
-          setMostraPopupLogin(false)
-        }
-      }
-    } catch {
-      // Profilo non sincronizzabile
-    }
-  }
-
-  async function salvaNicknameSoloLocale(nickDaSalvare?: string) {
-    const targetNick = nickDaSalvare || mioNickname
-    if (!targetNick.trim()) return { error: "Nome non valido" }
-
-    // Rimuoviamo il Regex se vuoi permettere spazi? No, manteniamo lo standard.
-    const err = nicknameErrorMessage(targetNick)
-    if (err) return { error: err }
-
-    if (sessionId) {
-      // Chiama l'RPC per riservare il nickname provvisoriamente
-      const { data, error } = await supabase.rpc('reserve_provisional_nickname', {
-        p_nickname: targetNick.trim(),
-        p_session_id: sessionId
-      })
-
-      if (error) {
-        return { error: "Errore di connessione." }
-      }
-
-      if (!data.success) {
-        if (data.error === 'nickname_taken_by_user') return { error: "Nickname preso da un utente registrato." }
-        if (data.error === 'nickname_taken_by_guest') return { error: "Nickname preso da un altro ospite ora." }
-        return { error: "Nickname non disponibile." }
-      }
-    }
-
-    // Se successo (o niente error)
-    localStorage.setItem('think_nickname', targetNick.trim())
-    setMioNickname(targetNick.trim())
-    setMostraPopupBenvenuto(false)
-    return { success: true }
-  }
-
-  async function handleDismissWelcome() {
-    const defaultNick = "THINKER"
-    localStorage.setItem('think_nickname', defaultNick)
-    setMioNickname(defaultNick)
-    setMostraPopupBenvenuto(false)
-  }
-
-  // --- Chiamato dalla modale Obbligatoria O da Account --- 
-  async function handleCompleteProfile(nickFinale: string) {
-    const nickPulito = nickFinale.trim()
-    const err = nicknameErrorMessage(nickPulito)
-    if (err) return { error: { message: err } }
-
-    // RPC SICURO (Evita furti tra la query e l'insert, controllando anche la tabella guest)
-    const { data, error } = await supabase.rpc('claim_definitive_nickname', {
-      p_nickname: nickPulito,
-      p_session_id: sessionId || null
-    })
-
-    if (error) {
-      return { error: { code: 'OTHER' } }
-    }
-
-    if (!data.success) {
-      if (data.error === 'nickname_taken_by_user') return { error: { code: '23505' } } // Simula l'errore unique constraint
-      if (data.error === 'nickname_taken_by_guest') return { error: { code: '23505' } }
-      return { error: { code: 'OTHER' } }
-    }
-
-    // Claim riuscito (aggiornamento account avvenuto sul db). Ora ricarico cache locale.        
-    localStorage.setItem('think_nickname', nickPulito)
-    setMioNickname(nickPulito)
-    if (utenteLoggato?.id) {
-      clearNicknamePromptSeen(utenteLoggato.id)
-    }
-    setMostraPopupNicknameObbligatorio(false)
-    return { error: null }
-  }
-
-  async function handleSaveNickname(newNick: string): Promise<{ success: boolean; error?: string }> {
-    const err = nicknameErrorMessage(newNick)
-    if (err) return { success: false, error: err }
-
-    // Se loggato, salviamo su DB in modo definitivo
-    if (utenteLoggato) {
-      const { data, error } = await supabase.rpc('claim_definitive_nickname', {
-        p_nickname: newNick,
-        p_session_id: sessionId || null
-      })
-
-      if (error) return { success: false, error: "Errore durante il salvataggio su database" }
-      if (!data.success) {
-        if (data.error === 'nickname_taken_by_user') return { success: false, error: "Nickname già occupato da un altro utente" }
-        if (data.error === 'nickname_taken_by_guest') return { success: false, error: "Nickname temporaneamente bloccato da un ospite" }
-        return { success: false, error: "Nickname non disponibile" }
-      }
-    } else {
-      // Se non loggato, proviamo a riservarlo come anonimi
-      if (sessionId) {
-        const { data, error } = await supabase.rpc('reserve_provisional_nickname', {
-          p_nickname: newNick,
-          p_session_id: sessionId
-        })
-        if (error) return { success: false, error: "Errore di connessione" }
-        if (!data.success) {
-          if (data.error === 'nickname_taken_by_user') return { success: false, error: "Nickname già occupato da un altro utente" }
-          if (data.error === 'nickname_taken_by_guest') return { success: false, error: "Nickname già in uso da un ospite" }
-          return { success: false, error: "Nickname non disponibile" }
-        }
-      }
-    }
-
-    // In ogni caso di successo, salviamo in locale
-    localStorage.setItem('think_nickname', newNick)
-    setMioNickname(newNick)
-    return { success: true }
-  }
-
-
-  async function getEffectiveCoords() {
-    if (userLocation && userLocation.regione) {
-      return userLocation
-    }
-    const loc = await ottieniCoordinate()
-    if (loc) setUserLocation(loc)
-    return loc
-  }
 
   async function creaChat() {
     if (!nuovoMessaggio.trim()) return
@@ -1513,71 +1064,7 @@ export default function ThinkMain() {
     setReportOpen(true);
   }
 
-  async function logout() {
-    await supabase.auth.signOut()
-    localStorage.removeItem('think_nickname')
-    setMioNickname('')
-    setUtenteLoggato(null)
-    setMostraPopupBenvenuto(true)
-    setMode("feed")
-    setActiveTab("home")
-  }
 
-  async function accediConGoogle() {
-    setLoginLoading(true)
-    setLoginError('')
-    // Fallback on origin guarantees that the PWA resumes at the EXACT path it left off
-    // Cache-busting for redirect to avoid Cloudflare/Browser issues
-    const ts = Date.now()
-    const redirectTo = window.location.hostname === 'thethink.space'
-      ? `https://thethink.space/?v=${ts}`
-      : `${window.location.origin}/?v=${ts}`
-
-    // Assicuriamoci che non ci siano frammenti residui nel redirectTo
-    const cleanRedirectTo = redirectTo.split('#')[0]
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: cleanRedirectTo,
-        queryParams: { prompt: 'select_account' }
-      }
-    })
-    if (error) {
-      setLoginError(error.message)
-      setLoginLoading(false)
-    }
-  }
-
-  async function inviaMagicLink(e?: React.FormEvent) {
-    e?.preventDefault()
-    setLoginError("")
-
-    // --- CHEAT CODE TEST (Solo per Dennis) ---
-    if (emailLogin === "DennisTest") {
-      setLoginLoading(true)
-      const { error } = await supabase.auth.signInWithPassword({
-        email: 'dennischeats@thethink.space',
-        password: 'DennisTestPassword123!'
-      })
-      setLoginLoading(false)
-      if (error) {
-        setLoginError("Errore account di test: " + error.message)
-      } else {
-        setMostraPopupLogin(false)
-        setMostraPopupBenvenuto(false)
-      }
-      return
-    }
-    // ------------------------------------------
-
-    if (!emailLogin || !emailLogin.includes("@")) { setLoginError("Inserisci una email valida"); return }
-    setLoginLoading(true)
-    const { error } = await supabase.auth.signInWithOtp({ email: emailLogin, options: { emailRedirectTo: window.location.origin } })
-    setLoginLoading(false)
-    if (error) setLoginError(error.message)
-    else setLoginSent(true)
-  }
 
   // Multi-lingual search debouncer
   useEffect(() => {
