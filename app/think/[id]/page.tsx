@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { getClientEnv } from '@/lib/env'
 import { JsonLd, debateSchema, breadcrumbSchema } from '@/components/seo/JsonLd'
 import { DebateRedirect } from '@/components/seo/DebateRedirect'
 
@@ -12,8 +13,8 @@ export const revalidate = 300 // ISR: ricarica ogni 5 minuti
 // Client pubblico (anon key) — le chats non hanno RLS abilitato
 function createPublicClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    getClientEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://placeholder.supabase.co'),
+    getClientEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'placeholder-anon-key')
   )
 }
 

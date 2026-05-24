@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServer } from '@/lib/supabaseServer'
 
 interface TelegramCallbackMessage {
   message_id: number
@@ -32,10 +32,7 @@ export async function POST(req: Request) {
       const chatIdTelegram = callbackQuery.message.chat.id
 
       const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-      const supabaseAdmin = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY! || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const supabaseAdmin = createSupabaseServer()
 
       const [action, targetChat, targetRisp] = callbackData.split('|')
 

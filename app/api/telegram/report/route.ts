@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseServer } from '@/lib/supabaseServer'
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Errore sconosciuto'
@@ -21,10 +21,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Periodo non valido' }, { status: 400 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY! || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabaseAdmin = createSupabaseServer()
     const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
     const CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
