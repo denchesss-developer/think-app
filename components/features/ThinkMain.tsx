@@ -423,6 +423,7 @@ export default function ThinkMain() {
 
   // Backend Calls
   const fetchChats = useCallback(async () => {
+    setFeedLoading(true)
     try {
       if (searchQueryLng) {
         // Use Global Search RPC if a translated search query exists
@@ -448,6 +449,8 @@ export default function ThinkMain() {
       }
     } catch (err) {
       console.error("DEBUG: fetchChats error:", err)
+    } finally {
+      setFeedLoading(false)
     }
   }, [searchQueryLng])
 
