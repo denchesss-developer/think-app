@@ -240,7 +240,6 @@ export async function GET(req: NextRequest) {
 
   try {
     // Step A: Fetch news
-    console.log('[Cron] Fetching news from GNews...')
     const newsArticles = await fetchNewsFromGNews()
 
     if (newsArticles.length === 0) {
@@ -262,8 +261,6 @@ export async function GET(req: NextRequest) {
 
     for (const newsItem of articlesToProcess) {
       try {
-        console.log(`[Cron] Processing: ${newsItem.title.substring(0, 50)}...`)
-
         // Step B: Process with Gemini
         let geminiData: GeminiResult | null = await processWithGemini(newsItem)
         

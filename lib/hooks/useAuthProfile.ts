@@ -264,23 +264,6 @@ export function useAuthProfile(setMode: (m: any) => void, setActiveTab: (t: any)
     e?.preventDefault()
     setLoginError("")
 
-    // Cheat code Dennis
-    if (emailLogin === "DennisTest") {
-      setLoginLoading(true)
-      const { error } = await supabase.auth.signInWithPassword({
-        email: 'dennischeats@thethink.space',
-        password: 'DennisTestPassword123!'
-      })
-      setLoginLoading(false)
-      if (error) {
-        setLoginError("Errore account di test: " + error.message)
-      } else {
-        setMostraPopupLogin(false)
-        setMostraPopupBenvenuto(false)
-      }
-      return
-    }
-
     if (!emailLogin || !emailLogin.includes("@")) { setLoginError("Inserisci una email valida"); return }
     setLoginLoading(true)
     const { error } = await supabase.auth.signInWithOtp({

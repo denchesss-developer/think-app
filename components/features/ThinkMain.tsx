@@ -443,7 +443,7 @@ export default function ThinkMain() {
         // Use Global Search RPC if a translated search query exists
         const { data, error } = await supabase.rpc('search_chats', { search_term: searchQueryLng })
         if (error) {
-          console.error("DEBUG: Search RPC error:", error)
+          console.error("Search RPC error:", error)
           return
         }
         setChats(data || [])
@@ -456,13 +456,13 @@ export default function ThinkMain() {
           .limit(500)
 
         if (error) {
-          console.error("DEBUG: fetchChats error:", error)
+          console.error("fetchChats error:", error)
           return
         }
         setChats(allChats || [])
       }
     } catch (err) {
-      console.error("DEBUG: fetchChats error:", err)
+      console.error("fetchChats error:", err)
     } finally {
       setFeedLoading(false)
     }
@@ -475,7 +475,7 @@ export default function ThinkMain() {
     updateLocation(false)
     fetch('https://raw.githubusercontent.com/vasturiano/react-globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
       .then(res => res.json()).then(setCountries)
-    fetchChats().catch(e => console.error("DEBUG: fetchChats failed early:", e))
+    fetchChats().catch(e => console.error("fetchChats failed early:", e))
 
     // Task 5 / Task 3: Intercetta ?news_id= o ?thought= nell'URL
     if (typeof window !== 'undefined') {

@@ -46,7 +46,6 @@ export function useNotifications(userId: string | undefined) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          console.log("🔔 Nuova notifica ricevuta in Realtime:", payload)
           setNotifications((prev) => [payload.new as Notification, ...prev])
         }
       )
@@ -59,15 +58,12 @@ export function useNotifications(userId: string | undefined) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          console.log("📝 Notifica aggiornata in Realtime:", payload)
           setNotifications((prev) =>
             prev.map((n) => (n.id === payload.new.id ? (payload.new as Notification) : n))
           )
         }
       )
-      .subscribe((status, err) => {
-        console.log(`📡 Stato sottoscrizione notifiche (${userId}):`, status, err || "")
-      })
+      .subscribe()
 
     return () => {
       supabase.removeChannel(channel)

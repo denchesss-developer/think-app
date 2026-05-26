@@ -47,7 +47,7 @@ async function fetchTrendingTerms(countryCode: string): Promise<string[]> {
     })
 
     if (!res.ok) {
-      console.warn(`[Trending] Trends RSS ${countryCode} error: ${res.status}`)
+      console.error(`[Trending] Trends RSS ${countryCode} error: ${res.status}`)
       return []
     }
 
@@ -67,7 +67,6 @@ async function fetchTrendingTerms(countryCode: string): Promise<string[]> {
       usageUnits: terms.length,
       usageUnitLabel: 'trend_terms'
     })
-    console.log(`[Trending] ${countryCode}: trovati ${terms.length} trending terms`)
     return terms
   } catch (err) {
     console.error(`[Trending] Fetch RSS ${countryCode} failed:`, err)
@@ -234,8 +233,6 @@ export async function GET(req: NextRequest) {
   let totalCreated = 0
 
   for (const paese of paesiDaProcessare) {
-    console.log(`[Trending] Elaboro paese: ${paese.code}`)
-
     const terms = await fetchTrendingTerms(paese.code)
 
     if (terms.length === 0) {
