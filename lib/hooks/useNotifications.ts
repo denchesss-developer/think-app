@@ -63,7 +63,11 @@ export function useNotifications(userId: string | undefined) {
           )
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.error('useNotifications: Realtime channel error for user', userId)
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)

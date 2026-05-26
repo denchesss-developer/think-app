@@ -436,19 +436,18 @@ export default function ThinkMain() {
   }
 
   // Backend Calls
-  const fetchChats = useCallback(async () => {
+    const fetchChats = useCallback(async () => {
     setFeedLoading(true)
     try {
       if (searchQueryLng) {
-        // Use Global Search RPC if a translated search query exists
         const { data, error } = await supabase.rpc('search_chats', { search_term: searchQueryLng })
         if (error) {
           console.error("Search RPC error:", error)
+          setFeedLoading(false)
           return
         }
         setChats(data || [])
       } else {
-        // Fetch all chats globally, ordered by newest first
         const { data: allChats, error } = await supabase
           .from('chats')
           .select('*')
@@ -457,6 +456,7 @@ export default function ThinkMain() {
 
         if (error) {
           console.error("fetchChats error:", error)
+          setFeedLoading(false)
           return
         }
         setChats(allChats || [])

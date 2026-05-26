@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { createSupabaseServer } from '@/lib/supabaseServer'
+import { logError } from '@/lib/log'
 import BlogSearch from '@/components/features/BlogSearch'
 
 const BASE_URL = 'https://thethink.space'
@@ -94,7 +95,7 @@ export default async function BlogPage() {
     .limit(50)
 
   if (error) {
-    console.error('Blog fetch error:', error)
+    logError('Blog fetch error — news_articles query failed:', error.message)
   }
 
   const news: Pick<NewsArticle, 'id' | 'slug' | 'titolo' | 'domanda_breve' | 'immagine_url' | 'created_at'>[] = articles || []
