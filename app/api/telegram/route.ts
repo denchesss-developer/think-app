@@ -1,22 +1,18 @@
 import { NextResponse } from 'next/server'
+import { sendTelegramMessage, getErrorMessage } from '@/lib/telegram'
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Errore sconosciuto'
+interface SegnalazioneBody {
+  chatId?: string
+  rispostaId?: string
+  testoContenuto?: string
+  motivo: string
+  dettagli?: string
+  segnalatoDa?: string
 }
 
 export async function POST(req: Request) {
   try {
-    const { chatId, rispostaId, testoContenuto, motivo, dettagli, segnalatoDa } = await req.json()
-
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-    const CHAT_ID = process.env.TELEGRAM_CHAT_ID
-
-    if (!BOT_TOKEN || !CHAT_ID) {
-      return NextResponse.json(
-        { error: 'Configurazione Telegram mancante sul server.' },
-        { status: 500 }
-      )
-    }
+    const { chatId, rispostaId, testoContenuto, motivo, dettagli, segnalatoDa }: SegnalazioneBody = await req.json()
 
     let message = `🚨 <b>NUOVA SEGNALAZIONE</b>\n\n`
     message += `🛑 <b>Motivo:</b> ${motivo}\n`
@@ -47,27 +43,11 @@ export async function POST(req: Request) {
       ]
     }
 
-    const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`
-
-    const response = await fetch(telegramUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        message_thread_id: process.env.TELEGRAM_THREAD_SEGNALAZIONI,
-        text: message,
-        parse_mode: 'HTML',
-        reply_markup: inlineKeyboard
-      }),
+    await sendTelegramMessage({
+      text: message,
+      threadId: process.env.TELEGRAM_THREAD_SEGNALAZIONI,
+      replyMarkup: inlineKeyboard
     })
-
-    const data: { description?: string } = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.description || 'Errore invio messaggio Telegram')
-    }
 
     return NextResponse.json({ success: true, message: 'Notifica Telegram inviata.' })
   } catch (error: unknown) {

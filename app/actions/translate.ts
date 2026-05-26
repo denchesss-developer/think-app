@@ -9,6 +9,59 @@ function getTranslator() {
   return new deepl.Translator(authKey)
 }
 
+function normalizeLang(lang: string): string {
+  return lang.toLowerCase().replace(/[^a-z]/g, '')
+}
+
+function isAlreadyInTarget(text: string, targetLang: string): boolean {
+  const lang = normalizeLang(targetLang)
+  if (lang.startsWith('en')) {
+    return /^[a-zA-Z0-9\s.,!?;:'"()\-]+$/.test(text) && /[a-zA-Z]/.test(text)
+  }
+  return false
+}
+
+function mapTargetLang(raw: string): deepl.TargetLanguageCode {
+  const lang = normalizeLang(raw)
+  if (lang.startsWith('en')) return 'en-US' as deepl.TargetLanguageCode
+  if (lang.startsWith('pt')) return 'pt-PT' as deepl.TargetLanguageCode
+  return lang as deepl.TargetLanguageCode
+}
+
+async function getCachedTranslation(
+  entityId: number,
+  entityType: 'chat' | 'reply',
+  targetLang: string
+): Promise<{ translated_text: string; original_lang: string } | null> {
+  const { data } = await supabase
+    .from('translations_cache')
+    .select('translated_text, original_lang')
+    .eq('entity_id', entityId)
+    .eq('entity_type', entityType)
+    .eq('target_lang', targetLang)
+    .maybeSingle()
+  return data
+}
+
+async function saveTranslation(
+  entityId: number,
+  entityType: 'chat' | 'reply',
+  targetLang: string,
+  originalLang: string,
+  translatedText: string
+) {
+  const { error } = await supabase.from('translations_cache').insert({
+    entity_id: entityId,
+    entity_type: entityType,
+    target_lang: targetLang,
+    original_lang: originalLang,
+    translated_text: translatedText
+  })
+  if (error) {
+    console.error('Failed to cache translation:', error)
+  }
+}
+
 export async function translateText(
   text: string,
   targetLang: string,
@@ -22,49 +75,31 @@ export async function translateText(
     return { translatedText: text, sourceLang: targetLang }
   }
 
-  let dlTargetLang: deepl.TargetLanguageCode = targetLang.toLowerCase() as deepl.TargetLanguageCode
+  if (isAlreadyInTarget(text, targetLang)) {
+    return { translatedText: text, sourceLang: normalizeLang(targetLang) }
+  }
 
-  const langUpper = targetLang.toUpperCase()
-  if (langUpper.startsWith('EN')) dlTargetLang = 'en-US'
-  if (langUpper.startsWith('PT')) dlTargetLang = 'pt-PT'
+  const dlTargetLang = mapTargetLang(targetLang)
+
+  const cached = await getCachedTranslation(entityId, entityType, targetLang)
+  if (cached) {
+    return {
+      translatedText: cached.translated_text,
+      sourceLang: cached.original_lang
+    }
+  }
 
   try {
-    const { data: cached } = await supabase
-      .from('translations_cache')
-      .select('translated_text, original_lang')
-      .eq('entity_id', entityId)
-      .eq('entity_type', entityType)
-      .eq('target_lang', targetLang)
-      .maybeSingle()
-
-    if (cached) {
-      return {
-        translatedText: cached.translated_text,
-        sourceLang: cached.original_lang
-      }
-    }
-
     const result = await translator.translateText(text, null, dlTargetLang)
     const translatedText = result.text
-    const sourceLang = result.detectedSourceLang.toLowerCase()
+    const sourceLang = normalizeLang(result.detectedSourceLang)
 
-    if (sourceLang === targetLang.toLowerCase() || (sourceLang.startsWith('en') && targetLang.toLowerCase().startsWith('en'))) {
+    if (sourceLang === normalizeLang(targetLang) ||
+        (sourceLang.startsWith('en') && normalizeLang(targetLang).startsWith('en'))) {
       return { translatedText: text, sourceLang }
     }
 
-    const { error: insertError } = await supabase
-      .from('translations_cache')
-      .insert({
-        entity_id: entityId,
-        entity_type: entityType,
-        target_lang: targetLang,
-        original_lang: sourceLang,
-        translated_text: translatedText
-      })
-
-    if (insertError) {
-      console.error('Failed to cache translation:', insertError)
-    }
+    await saveTranslation(entityId, entityType, targetLang, sourceLang, translatedText)
 
     return { translatedText, sourceLang }
   } catch (error) {
@@ -79,8 +114,10 @@ export async function translateSearchQuery(query: string) {
   const translator = getTranslator()
   if (!translator) return query
 
+  if (isAlreadyInTarget(query, 'en')) return query
+
   try {
-    const result = await translator.translateText(query, null, 'en-US')
+    const result = await translator.translateText(query, null, 'en-US' as deepl.TargetLanguageCode)
     return result.text
   } catch (error) {
     console.error('Search translation error:', error)

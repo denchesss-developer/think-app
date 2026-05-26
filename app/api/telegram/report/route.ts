@@ -1,9 +1,25 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServer } from '@/lib/supabaseServer'
+import { sendTelegramMessage, getErrorMessage, getTelegramConfig } from '@/lib/telegram'
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Errore sconosciuto'
+function calcVar(curr: number, prev: number): string {
+  if (prev === 0) return curr > 0 ? '+100%' : '0%'
+  const perc = Math.round(((curr - prev) / prev) * 100)
+  return perc >= 0 ? `+${perc}%` : `${perc}%`
 }
+
+function fmtDate(d: Date): string {
+  return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+const PERIOD_CONFIG = {
+  settimana: { label: 'SETTIMANALE', days: 7, prevDays: 14, emoji: '🗓' },
+  mese: { label: 'MENSILE', days: 30, prevDays: 60, emoji: '📅' },
+  trimestre: { label: 'TRIMESTRALE', days: 90, prevDays: 180, emoji: '📊' },
+  semestre: { label: 'SEMESTRALE', days: 180, prevDays: 360, emoji: '📈' }
+} as const
+
+type Periodo = keyof typeof PERIOD_CONFIG
 
 export async function GET(req: Request) {
   try {
@@ -15,39 +31,19 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url)
-    const periodo = searchParams.get('periodo')
-
-    if (!periodo || !['settimana', 'mese', 'trimestre', 'semestre'].includes(periodo)) {
+    const periodoRaw = searchParams.get('periodo')
+    if (!periodoRaw || !(periodoRaw in PERIOD_CONFIG)) {
       return NextResponse.json({ error: 'Periodo non valido' }, { status: 400 })
     }
+    const periodo = periodoRaw as Periodo
+    const cfg = PERIOD_CONFIG[periodo]
 
     const supabaseAdmin = createSupabaseServer()
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-    const CHAT_ID = process.env.TELEGRAM_CHAT_ID
+    getTelegramConfig()
 
     const now = new Date()
-    const startDate = new Date()
-    const prevStartDate = new Date()
-
-    let nomePeriodo = ''
-
-    if (periodo === 'settimana') {
-      nomePeriodo = 'SETTIMANALE'
-      startDate.setDate(startDate.getDate() - 7)
-      prevStartDate.setDate(prevStartDate.getDate() - 14)
-    } else if (periodo === 'mese') {
-      nomePeriodo = 'MENSILE'
-      startDate.setMonth(startDate.getMonth() - 1)
-      prevStartDate.setMonth(prevStartDate.getMonth() - 2)
-    } else if (periodo === 'trimestre') {
-      nomePeriodo = 'TRIMESTRALE'
-      startDate.setMonth(startDate.getMonth() - 3)
-      prevStartDate.setMonth(prevStartDate.getMonth() - 6)
-    } else if (periodo === 'semestre') {
-      nomePeriodo = 'SEMESTRALE'
-      startDate.setMonth(startDate.getMonth() - 6)
-      prevStartDate.setMonth(prevStartDate.getMonth() - 12)
-    }
+    const startDate = new Date(now.getTime() - cfg.days * 86400000)
+    const prevStartDate = new Date(now.getTime() - cfg.prevDays * 86400000)
 
     const startIso = startDate.toISOString()
     const prevStartIso = prevStartDate.toISOString()
@@ -129,12 +125,6 @@ export async function GET(req: Request) {
       ? `"${topChat.titolo.slice(0, 60)}${topChat.titolo.length > 60 ? '...' : ''}" (${topChat.risposte_count || 0} risposte)`
       : '—'
 
-    const calcVar = (curr: number, prev: number) => {
-      if (prev === 0) return curr > 0 ? '+100%' : '0%'
-      const perc = Math.round(((curr - prev) / prev) * 100)
-      return perc >= 0 ? `+${perc}%` : `${perc}%`
-    }
-
     const varUtenti = calcVar(nuoviUtentiPeriodo, nuoviUtentiPrev)
     const varChats = calcVar(chatsPeriodo, chatsPrev)
     const varRisp = calcVar(rispPeriodo, rispPrev)
@@ -142,14 +132,9 @@ export async function GET(req: Request) {
     const varSegn = calcVar(segnPeriodo, segnPrev)
     const varEngagement = calcVar(Number(engagementNow), Number(engagementPrev))
 
-    const fmt = (d: Date) => d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })
-    const rangeLabel = `${fmt(startDate)} — ${fmt(now)}`
+    const rangeLabel = `${fmtDate(startDate)} — ${fmtDate(now)}`
 
-    const emojiMap: Record<string, string> = {
-      settimana: '🗓', mese: '📅', trimestre: '📊', semestre: '📈'
-    }
-
-    let msg = `${emojiMap[periodo]} <b>REPORT ${nomePeriodo} — THINK APP</b>\n`
+    let msg = `${cfg.emoji} <b>REPORT ${cfg.label} — THINK APP</b>\n`
     msg += `<i>📆 Periodo: ${rangeLabel}</i>\n\n`
     msg += `👥 <b>UTENTI REGISTRATI:</b> ${totalUsersCount} totali\n`
     msg += `↳ <i>Nuovi questo periodo:</i> <b>${nuoviUtentiPeriodo}</b> (<i>${varUtenti}</i> rispetto al precedente)\n\n`
@@ -168,21 +153,10 @@ export async function GET(req: Request) {
     msg += `🏆 <b>PENSIERO MVP:</b>\n<i>${pensieroMVP}</i>\n`
     msg += `\n<i>Continuiamo a spingere su questa rotta! 🚀</i>`
 
-    const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`
-    const response = await fetch(telegramUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        message_thread_id: process.env.TELEGRAM_THREAD_REPORT,
-        text: msg,
-        parse_mode: 'HTML',
-      }),
+    await sendTelegramMessage({
+      text: msg,
+      threadId: process.env.TELEGRAM_THREAD_REPORT
     })
-
-    if (!response.ok) {
-      throw new Error('Errore invio report Telegram')
-    }
 
     return NextResponse.json({ success: true, report: 'Inviato' })
   } catch (error: unknown) {

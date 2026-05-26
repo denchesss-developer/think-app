@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServer } from '@/lib/supabaseServer'
+import { getErrorMessage, editTelegramMessage, answerTelegramCallback } from '@/lib/telegram'
 
 interface TelegramCallbackMessage {
   message_id: number
@@ -17,10 +18,6 @@ interface TelegramWebhookPayload {
   callback_query?: TelegramCallbackQuery
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Errore sconosciuto'
-}
-
 export async function POST(req: Request) {
   try {
     const data = (await req.json()) as TelegramWebhookPayload
@@ -31,7 +28,6 @@ export async function POST(req: Request) {
       const messageId = callbackQuery.message.message_id
       const chatIdTelegram = callbackQuery.message.chat.id
 
-      const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
       const supabaseAdmin = createSupabaseServer()
 
       const [action, targetChat, targetRisp] = callbackData.split('|')
@@ -74,30 +70,13 @@ export async function POST(req: Request) {
         responseText = `❌ Errore DB: ${errorDetails || 'Controlla i log.'}`
       }
 
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          callback_query_id: callbackQuery.id,
-          text: responseText,
-          show_alert: false
-        })
-      })
+      await answerTelegramCallback(callbackQuery.id, responseText)
 
       if (!errorOccurred) {
         const originalText = callbackQuery.message.text ?? ''
         const newText = `✅ <b>GESTITO</b>\n<i>${responseText}</i>\n\n---\n\n${originalText}`
 
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatIdTelegram,
-            message_id: messageId,
-            text: newText,
-            parse_mode: 'HTML'
-          })
-        })
+        await editTelegramMessage(chatIdTelegram, messageId, newText)
       }
 
       return NextResponse.json({ success: true })

@@ -8,13 +8,16 @@ interface Traduzione {
 }
 
 export async function getTranslatedArticle(
-  articleId: string, 
+  articleId: string,
   originalSource: { titolo: string; contenuto_completo: string; domanda_breve: string },
-  lang: string, 
+  lang: string,
   existingTranslations: Record<string, Traduzione> | null
 ): Promise<Traduzione> {
-  // If we already have the translation cached in JSONB, return it immediately (0 cost)
-  if (existingTranslations && existingTranslations[lang]) {
+  if (!articleId || !lang || !originalSource?.titolo) {
+    throw new Error('Missing required parameters for getTranslatedArticle')
+  }
+
+  if (existingTranslations?.[lang]) {
     return existingTranslations[lang]
   }
 
@@ -23,9 +26,9 @@ export async function getTranslatedArticle(
     throw new Error('Missing GEMINI_API_KEY')
   }
 
-  const prompt = `Traduci il seguente articolo giornalistico in lingua '${lang}'. 
+  const prompt = `Traduci il seguente articolo giornalistico in lingua '${lang}'.
   Devi rispondere SOLO ED ESCLUSIVAMENTE con un JSON valido (nessun markdown, niente \`\`\`json).
-  
+
   Articolo originale (IT):
   Titolo: ${originalSource.titolo}
   Domanda: ${originalSource.domanda_breve}
@@ -48,10 +51,9 @@ export async function getTranslatedArticle(
   })
   const traduzione: Traduzione = extractJsonObject<Traduzione>(text)
 
-  // Save to supabase cache
   const supabase = createSupabaseServer()
   const newTranslations = { ...(existingTranslations || {}), [lang]: traduzione }
-  
+
   await supabase
     .from('news_articles')
     .update({ traduzioni: newTranslations })

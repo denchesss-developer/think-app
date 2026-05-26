@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServer } from '@/lib/supabaseServer'
 import { getUtcDayRange } from '@/lib/apiUsage'
-import { sendTelegramMessage } from '@/lib/telegram'
+import { sendTelegramMessage, getErrorMessage } from '@/lib/telegram'
 
 type UsageRow = {
   provider: string
@@ -167,7 +167,7 @@ export async function GET(req: Request) {
       providers: allProviders.length
     })
   } catch (error) {
-    console.error('Errore API Usage Report:', error)
+    console.error('Errore API Usage Report:', getErrorMessage(error))
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
