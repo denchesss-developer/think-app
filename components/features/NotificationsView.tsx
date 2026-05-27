@@ -25,24 +25,24 @@ function getClusterKey(n: Notification): string {
   return `${day}::${n.type}`
 }
 
-function getDayLabel(dateStr: string): string {
+function getDayLabel(dateStr: string, lang: string): string {
   const d = new Date(dateStr)
   const now = new Date()
   const diff = Math.floor((now.setHours(0,0,0,0) - d.setHours(0,0,0,0)) / 86400000)
-  if (diff === 0) return "Oggi"
-  if (diff === 1) return "Ieri"
-  return d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })
+  if (diff === 0) return lang === 'it' ? "Oggi" : "Today"
+  if (diff === 1) return lang === 'it' ? "Ieri" : "Yesterday"
+  return d.toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-function getClusterLabel(notifications: Notification[]): string {
+function getClusterLabel(notifications: Notification[], lang: string): string {
   const type = notifications[0].type
   const count = notifications.length
-  if (count === 1) return "" // single: render normally
-  if (type === 'news_question') return `${count} domande del giorno`
-  if (type === 'new_reply') return `${count} nuove risposte`
-  if (type === 'new_thought_nearby') return `${count} nuovi pensieri vicino a te`
-  if (type === 'new_bookmark') return `${count} nuovi preferiti`
-  return `${count} notifiche`
+  if (count === 1) return ""
+  if (type === 'news_question') return lang === 'it' ? `${count} domande del giorno` : `${count} daily questions`
+  if (type === 'new_reply') return lang === 'it' ? `${count} nuove risposte` : `${count} new replies`
+  if (type === 'new_thought_nearby') return lang === 'it' ? `${count} pensieri nella tua zona` : `${count} thoughts near you`
+  if (type === 'new_bookmark') return lang === 'it' ? `${count} nuovi preferiti` : `${count} new bookmarks`
+  return lang === 'it' ? `${count} notifiche` : `${count} notifications`
 }
 
 function getClusterIcon(type: string) {
@@ -104,7 +104,7 @@ function NotificationClusterRow({
     )
   }
 
-  const label = getClusterLabel(items)
+  const label = getClusterLabel(items, lang)
   const type = items[0].type
   const unread = items.filter(n => !n.is_read).length
 
@@ -168,51 +168,90 @@ function NotificationClusterRow({
   )
 }
 
+function NotificationsOnboardingHint({ lang }: { lang: string }) {
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('think_hint_notifications') === '1'
+  })
+  if (dismissed) return null
+  return (
+    <div className="mx-4 mb-4 p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20">
+      <p className="text-[13px] font-bold text-blue-400">
+        {lang === 'it' ? '💡 Le tue notifiche' : '💡 Your notifications'}
+      </p>
+      <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
+        {lang === 'it'
+          ? 'Qui trovi risposte, interazioni e news. Tocca per aprire, segna come lette per tenere traccia.'
+          : 'Replies, interactions, and news live here. Tap to open, mark as read to keep track.'}
+      </p>
+      <button
+        onClick={() => {
+          localStorage.setItem('think_hint_notifications', '1')
+          setDismissed(true)
+        }}
+        className="mt-2 text-[10px] font-black uppercase tracking-widest text-blue-400/60 hover:text-blue-400 transition-colors"
+      >
+        {lang === 'it' ? 'OK, ho capito' : 'OK, got it'}
+      </button>
+    </div>
+  )
+}
+
 export function NotificationsView({ notifications, onRead, onReadAll, onAction }: NotificationsViewProps) {
+  const { lang } = useLang()
   const days = buildClusters(notifications)
   const unreadCount = notifications.filter(n => !n.is_read).length
 
   return (
     <div className="space-y-8 pb-10 fade-in-up animate-in duration-500 w-full max-w-2xl mx-auto px-4 sm:px-0">
-      {/* Header stile Discovery */}
+      {/* Header */}
       <header className="text-center pt-6 pb-2">
         <h2 className="text-5xl font-black tracking-tighter text-[var(--color-text-main)]">
-          Notifiche.
+          {lang === 'it' ? 'Notifiche' : 'Notifications'}
         </h2>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500">
-          Le tue interazioni
+          {unreadCount > 0
+            ? (lang === 'it' ? `${unreadCount} da leggere` : `${unreadCount} unread`)
+            : (lang === 'it' ? 'Tutto a posto' : 'All caught up')}
         </p>
         
         {unreadCount > 0 && (
           <div className="flex justify-center mt-6">
             <button
               onClick={onReadAll}
-              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-hover)] border border-[var(--color-border-subtle)] hover:border-[var(--color-brand-blue)]/50 hover:bg-[var(--color-brand-blue)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-brand-blue)] rounded-full transition-all duration-300 text-[10px] font-black uppercase tracking-[0.2em]"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-subtle)] hover:border-[var(--color-brand-blue)]/50 hover:bg-[var(--color-brand-blue)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-brand-blue)] rounded-full transition-all duration-300 text-[10px] font-black uppercase tracking-[0.2em]"
             >
               <Check size={14} strokeWidth={3} />
-              Segna tutto letto
+              {lang === 'it' ? 'Segna tutto letto' : 'Mark all read'}
             </button>
           </div>
         )}
       </header>
 
       {notifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+        <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-20 h-20 mb-6 rounded-[2rem] bg-[var(--color-bg-card)] shadow-inner flex items-center justify-center border border-[var(--color-border-subtle)]">
-            <Bell className="w-8 h-8 text-[var(--color-text-muted)]" />
+            <Bell className="w-8 h-8 text-[var(--color-text-faint)]" />
           </div>
-          <p className="text-base font-bold text-[var(--color-text-muted)] tracking-wide">Tutto tace</p>
-          <p className="text-xs text-[var(--color-text-faint)] mt-2">Non ci sono nuove interazioni.</p>
+          <p className="text-lg font-bold text-[var(--color-text-muted)] tracking-wide">
+            {lang === 'it' ? 'Nessuna notifica' : 'No notifications'}
+          </p>
+          <p className="text-[13px] font-medium text-[var(--color-text-faint)] mt-2 max-w-xs">
+            {lang === 'it'
+              ? 'Quando qualcuno risponde ai tuoi pensieri o salva uno dei tuoi contenuti, lo vedrai qui.'
+              : 'When someone replies to your thoughts or bookmarks your content, you\'ll see it here.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-8 mt-6">
+          <NotificationsOnboardingHint lang={lang} />
           {days.map(({ day, clusters }) => (
             <div key={day} className="relative">
               {/* Day label */}
               <div className="flex items-center gap-3 mb-6 mt-2">
                 <div className="h-px flex-1 bg-[var(--color-border-subtle)] opacity-50" />
                 <span className="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                  {getDayLabel(clusters[0].items[0].created_at)}
+                  {getDayLabel(clusters[0].items[0].created_at, lang)}
                 </span>
                 <div className="h-px flex-1 bg-[var(--color-border-subtle)] opacity-50" />
               </div>

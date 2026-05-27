@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { type Lang, LANGS } from "@/lib/i18n"
+import { useToast } from "@/components/ui/Toast"
 import { GamificationView } from "@/components/features/GamificationView"
 import { containsBannedWord } from "@/lib/bannedWords"
 
@@ -78,6 +79,7 @@ export function AccountView({
   const [showLegal, setShowLegal] = useState(false)
 
   // Nickname Editing State
+  const { toast } = useToast()
   const [isEditingNick, setIsEditingNick] = useState(false)
   const [tempNick, setTempNick] = useState(mioNickname)
   const [nickSaving, setNickSaving] = useState(false)
@@ -99,6 +101,7 @@ export function AccountView({
     setNickSaving(false)
     if (res.success) {
       setIsEditingNick(false)
+      toast(lang === 'it' ? 'Thinkname salvato!' : 'Thinkname saved!', 'success')
     } else {
       setNickError(res.error || "Errore durante il salvataggio")
     }
