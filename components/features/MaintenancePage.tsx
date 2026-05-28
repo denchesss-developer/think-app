@@ -111,8 +111,7 @@ export default function MaintenancePage({ onAuthorized }: MaintenancePageProps) 
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const MAINTENANCE_PASSWORD = process.env.NEXT_PUBLIC_MAINTENANCE_PASSWORD
-    if (MAINTENANCE_PASSWORD && password === MAINTENANCE_PASSWORD) {
+    if (password === "think1234") {
       onAuthorized();
     } else {
       setError(true);
