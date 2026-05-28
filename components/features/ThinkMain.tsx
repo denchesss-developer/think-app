@@ -36,7 +36,6 @@ import type { AppTheme } from "@/components/features/AccountView"
 
 // UI Components
 import { Button } from "@/components/ui/Button"
-import { useToast } from "@/components/ui/Toast"
 
 // Actions
 import { translateText, translateSearchQuery } from "@/app/actions/translate"
@@ -48,7 +47,6 @@ type Mode = "feed" | "chat" | "account" | "activity" | "compose" | "notification
 
 export default function ThinkMain() {
   const { lang, setLang, t } = useLang()
-  const { toast } = useToast()
   const [appTheme, setAppTheme] = useState<AppTheme>("system")
   const [isDark, setIsDark] = useState(false)
 
@@ -451,21 +449,6 @@ export default function ThinkMain() {
       supabase.removeChannel(risposteChannel)
     }
   }, [chatAttiva])
-
-  const prevLocationRef = useRef(userLocation)
-  useEffect(() => {
-    if (prevLocationRef.current !== userLocation && userLocation) {
-      toast(lang === 'it' ? 'Posizione aggiornata' : 'Location updated', 'success')
-    }
-    prevLocationRef.current = userLocation
-  }, [userLocation])
-  const prevErrorRef = useRef(locationError)
-  useEffect(() => {
-    if (prevErrorRef.current !== locationError && locationError) {
-      toast(locationError, 'error')
-    }
-    prevErrorRef.current = locationError
-  }, [locationError])
 
   // Expose chats + apriChat on window for URL param mechanism (Task 5 deep-link)
   useEffect(() => {
@@ -880,18 +863,19 @@ export default function ThinkMain() {
 
     const existing = bookmarks.find(b => b.chat?.id === chat.id)
     if (existing) {
+      // Optimistic update
       setBookmarks(prev => prev.filter(b => b.chat?.id !== chat.id))
       await supabase.from('bookmarks').delete().eq('id', existing.id)
-      toast(lang === 'it' ? 'Rimosso dai salvati' : 'Removed from saved', 'info')
     } else {
+      // Optimistic update
       const tempBookmark = { id: Date.now(), user_id: utenteLoggato.id, chat_id: chat.id, chat } as unknown as Bookmark
       setBookmarks(prev => [...prev, tempBookmark])
       await supabase.from('bookmarks').insert([{ user_id: utenteLoggato.id, chat_id: chat.id }])
-      toast(lang === 'it' ? 'Salvato nei preferiti' : 'Saved to bookmarks', 'success')
     }
   }
 
   const handleShare = async (chat: Chat) => {
+    // Usiamo il link diretto /think/[id] così WhatsApp/Telegram leggono l'OG Image dinamica
     const url = window.location.origin + '/think/' + chat.id;
     const shareText = "Sto discutendo di questo su Think. Se potessi dire la tua su tutto, anonimamente lo faresti?";
     
@@ -908,7 +892,7 @@ export default function ThinkMain() {
     } catch (err) {
       try {
         await navigator.clipboard.writeText(shareText + " " + url);
-        toast(t('link_copiato') || "Link copiato negli appunti!", 'success');
+        alert(t('link_copiato') || "Link copiato negli appunti!");
       } catch (clipErr) {
         console.error("Could not copy to clipboard", clipErr);
       }

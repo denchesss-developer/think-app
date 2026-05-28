@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { Pencil, MessageSquare, Bookmark, Clock, Flame } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { translateRegion, type Lang } from "@/lib/i18n"
@@ -30,35 +30,6 @@ function getActivityStats(chat: Chat, lang: Lang, t: (k: string) => string) {
     vitaLabel,
     rinascite: Math.max(0, gapRinascita)
   }
-}
-
-function ActivityOnboardingHint({ lang }: { lang: Lang }) {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('think_hint_activity') === '1'
-  })
-  if (dismissed) return null
-  return (
-    <div className="mx-4 mb-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20">
-      <p className="text-[13px] font-bold text-emerald-400">
-        {lang === 'it' ? '💡 La tua attività' : '💡 Your activity'}
-      </p>
-      <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
-        {lang === 'it'
-          ? 'Qui trovi i tuoi pensieri, le risposte che hai dato e i contenuti salvati. Tocca per riaprire e continuare la discussione.'
-          : 'Your thoughts, replies, and saved content live here. Tap to reopen and continue the discussion.'}
-      </p>
-      <button
-        onClick={() => {
-          localStorage.setItem('think_hint_activity', '1')
-          setDismissed(true)
-        }}
-        className="mt-2 text-[10px] font-black uppercase tracking-widest text-emerald-400/60 hover:text-emerald-400 transition-colors"
-      >
-        {lang === 'it' ? 'OK, ho capito' : 'OK, got it'}
-      </button>
-    </div>
-  )
 }
 
 export function ActivityView({
@@ -108,7 +79,6 @@ export function ActivityView({
 
   return (
     <div className="space-y-8 pb-10 fade-in-up animate-in duration-500">
-      <ActivityOnboardingHint lang={lang} />
       <div className="text-center">
         <h2 className="text-[28px] font-black tracking-tight mb-1">{t('attivita')}</h2>
         <p className="text-[13px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">

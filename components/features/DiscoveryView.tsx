@@ -10,64 +10,6 @@ import { ChatCard } from "@/components/features/ChatCard"
 import { ChatCardSkeleton } from "@/components/ui/ChatCardSkeleton"
 import { calcolaStatoVitale } from "@/components/features/MapGlobe"
 
-function NewsOnboardingHint({ lang }: { lang: Lang }) {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('think_hint_news') === '1'
-  })
-  if (dismissed) return null
-  return (
-    <div className="mx-4 mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
-      <p className="text-[13px] font-bold text-amber-500">
-        {lang === 'it' ? '💡 Novità dal blog' : '💡 News from the blog'}
-      </p>
-      <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
-        {lang === 'it'
-          ? 'Qui trovi le domande del giorno e gli approfondimenti dei redattori. Tocca una card per leggere e partecipare.'
-          : 'Here you\'ll find daily questions and editor insights. Tap a card to read and join the discussion.'}
-      </p>
-      <button
-        onClick={() => {
-          localStorage.setItem('think_hint_news', '1')
-          setDismissed(true)
-        }}
-        className="mt-2 text-[10px] font-black uppercase tracking-widest text-amber-500/60 hover:text-amber-500 transition-colors"
-      >
-        {lang === 'it' ? 'OK, ho capito' : 'OK, got it'}
-      </button>
-    </div>
-  )
-}
-
-function TrendsOnboardingHint({ lang }: { lang: Lang }) {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('think_hint_trends') === '1'
-  })
-  if (dismissed) return null
-  return (
-    <div className="mx-4 mb-6 p-4 rounded-2xl bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20">
-      <p className="text-[13px] font-bold text-violet-400">
-        {lang === 'it' ? '💡 Tendenze globali' : '💡 Global trends'}
-      </p>
-      <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
-        {lang === 'it'
-          ? 'Qui vedi le domande più discusse in ogni paese. Esplora cosa pensa il mondo.'
-          : 'Here are the most discussed questions by country. Explore what the world is thinking.'}
-      </p>
-      <button
-        onClick={() => {
-          localStorage.setItem('think_hint_trends', '1')
-          setDismissed(true)
-        }}
-        className="mt-2 text-[10px] font-black uppercase tracking-widest text-violet-400/60 hover:text-violet-400 transition-colors"
-      >
-        {lang === 'it' ? 'OK, ho capito' : 'OK, got it'}
-      </button>
-    </div>
-  )
-}
-
 const FILTRI_KEYS = [
   { id: "Recenti", labelKey: "recenti", icon: <Clock className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
   { id: "Tendenze", labelKey: "tendenze", icon: <TrendingUp className="w-4 h-4 mr-1.5 inline flex-shrink-0" /> },
@@ -425,7 +367,6 @@ export default function DiscoveryView({
           {/* TRENDING SECTION */}
           {mostraTendenze && (
             <div className="space-y-4 pt-2 pb-12">
-              <TrendsOnboardingHint lang={lang} />
               {trendingFiltered.length === 0 ? (
                 <div className="py-16 text-center">
                   <p className="text-[var(--color-text-muted)] font-bold">
@@ -497,21 +438,8 @@ export default function DiscoveryView({
           {/* NEWS SECTION */}
           {mostraNotizie && (
             <div className="space-y-0 pt-0 pb-12">
-              <NewsOnboardingHint lang={lang} />
               {(() => {
-                if (newsFiltered.length === 0) return (
-                  <div className="py-16 text-center">
-                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[var(--color-bg-hover)] flex items-center justify-center">
-                      <Newspaper className="w-6 h-6 text-[var(--color-text-faint)]" />
-                    </div>
-                    <p className="text-[var(--color-text-muted)] font-bold text-sm">
-                      {categoriaAttiva ? `Nessuna news in "${categoriaAttiva}".` : (lang === 'it' ? 'Nessuna news al momento.' : 'No news at the moment.')}
-                    </p>
-                    <p className="text-[10px] text-[var(--color-text-faint)] mt-2">
-                      {lang === 'it' ? 'Le notizie del blog appaiono qui.' : 'Blog news will appear here.'}
-                    </p>
-                  </div>
-                )
+                if (newsFiltered.length === 0) return null
 
                 const buckets: Record<string, { label: string; order: number; isCollapsible?: boolean; chats: typeof newsFiltered }> = {}
                 const now = new Date()
@@ -677,27 +605,10 @@ export default function DiscoveryView({
           {chatsFiltrate.length === 0 && !feedLoading && (
             <div className="flex flex-col items-center justify-start h-[45vh] pt-12 text-center animate-in fade-in zoom-in duration-500 overflow-hidden">
               <div className="w-16 h-16 bg-[var(--color-bg-card)] rounded-3xl flex items-center justify-center mx-auto mb-6 border border-transparent">
-                {testoRicerca ? (
-                  <Search className="w-8 h-8 text-[var(--color-text-muted)]" />
-                ) : filtroAttivo === 'Archivio' ? (
-                  <Archive className="w-8 h-8 text-[var(--color-text-muted)]" />
-                ) : (
-                  <Search className="w-8 h-8 text-[var(--color-text-muted)]" />
-                )}
+                <Search className="w-8 h-8 text-[var(--color-text-muted)]" />
               </div>
               <p className="text-[var(--color-text-muted)] font-black text-[10px] uppercase tracking-[0.3em] mr-[-0.3em]">
-                {testoRicerca
-                  ? (lang === 'it' ? 'Nessun Risultato' : 'No Results')
-                  : filtroAttivo === 'Archivio'
-                    ? (lang === 'it' ? 'Archivio Vuoto' : 'Empty Archive')
-                    : (lang === 'it' ? 'Nessun Pensiero' : 'No Thoughts')}
-              </p>
-              <p className="text-[11px] text-[var(--color-text-faint)] mt-2 font-medium">
-                {testoRicerca
-                  ? (lang === 'it' ? 'Prova a cambiare ricerca.' : 'Try a different search.')
-                  : filtroAttivo === 'Archivio'
-                    ? (lang === 'it' ? 'I pensieri scaduti finiscono qui.' : 'Expired thoughts end up here.')
-                    : (lang === 'it' ? 'I pensieri degli utenti appariranno qui.' : 'User thoughts will appear here.')}
+                {lang === 'it' ? 'Nessun Risultato' : 'No Results'}
               </p>
             </div>
           )}

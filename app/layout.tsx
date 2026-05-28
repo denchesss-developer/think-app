@@ -4,7 +4,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { PostHogProvider } from "./providers";
 import { CookieBanner } from "@/components/ui/CookieBanner";
-import { ToastProvider } from "@/components/ui/Toast";
 import { TrackingManager } from "@/components/features/TrackingManager";
 import { JsonLd, websiteSchema, organizationSchema } from "@/components/seo/JsonLd";
 import "./globals.css";
@@ -146,9 +145,7 @@ export default function RootLayout({
         <TrackingManager />
         <PostHogProvider>
           <ErrorBoundary>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
+            {children}
             <CookieBanner />
           </ErrorBoundary>
         </PostHogProvider>
